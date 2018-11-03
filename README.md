@@ -1,4 +1,7 @@
-# moonsync*, a demo by Benjamin Welsh (@DubThink) and Adam Lastowka (@Rachmanin0xFF)
+# moonsync*, a demo by Benjamin Welsh and Adam Lastowka
+[Benjamin Welsh](https://github.com/DubThink)
+
+[Adam Lastowka](https://github.com/Rachmanin0xFF)
 
 *working title
 
