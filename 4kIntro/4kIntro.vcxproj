@@ -78,8 +78,14 @@
       <Command>ECHO Minimizing fragment shader...
 "$(SolutionDir)shader_minifier.exe" "$(ProjectDir)src/fragment_shader.glsl" --preserve-externals -o "$(ProjectDir)src/fragment_shader.inl"
 ECHO Minimizing post processing shader...
-"$(SolutionDir)shader_minifier.exe" "$(ProjectDir)src/post_processing_shader.glsl" --preserve-externals -o "$(ProjectDir)src/post_processing_shader.inl"</Command>
+"$(SolutionDir)shader_minifier.exe" "$(ProjectDir)src/post_processing_shader.glsl" --preserve-externals -o "$(ProjectDir)src/post_processing_shader.inl"
+ECHO Building 4klang...
+call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     </PreBuildEvent>
+    <PreLinkEvent>
+      <Command>
+      </Command>
+    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -146,6 +152,7 @@ ECHO Minimizing post processing shader...
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="src\4klang.inc" />
     <None Include="src\post_processing_shader.glsl" />
     <None Include="src\fragment_shader.glsl">
       <FileType>Text</FileType>
