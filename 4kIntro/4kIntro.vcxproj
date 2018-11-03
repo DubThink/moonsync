@@ -129,11 +129,14 @@ call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
       <Command>ECHO Minimizing fragment shader...
 "$(SolutionDir)shader_minifier.exe" "$(ProjectDir)src/fragment_shader.glsl" --preserve-externals -o "$(ProjectDir)src/fragment_shader.inl"
 ECHO Minimizing post processing shader...
-"$(SolutionDir)shader_minifier.exe" "$(ProjectDir)src/post_processing_shader.glsl" --preserve-externals -o "$(ProjectDir)src/post_processing_shader.inl"</Command>
+"$(SolutionDir)shader_minifier.exe" "$(ProjectDir)src/post_processing_shader.glsl" --preserve-externals -o "$(ProjectDir)src/post_processing_shader.inl"
+ECHO Building 4klang...
+call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\config.h" />
+    <ClInclude Include="src\debug_help.h" />
     <ClInclude Include="src\ext.h" />
     <ClInclude Include="src\fp.h" />
     <ClInclude Include="src\glext.h" />
@@ -142,6 +145,7 @@ ECHO Minimizing post processing shader...
     <ClInclude Include="src\system.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\debug_help.cpp" />
     <ClCompile Include="src\ext.cpp" />
     <ClCompile Include="src\intro.cpp" />
     <ClCompile Include="src\main_win_deb.cpp">

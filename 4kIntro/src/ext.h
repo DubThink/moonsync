@@ -29,6 +29,8 @@ extern void *myglfunc[NUMFUNCTIONS];
 #define glTexStorage2D                 ((PFNGLTEXSTORAGE2DPROC)myglfunc[7])
 #define glDrawBuffers                  ((PFNGLDRAWBUFFERSPROC)myglfunc[8])
 #define glFramebufferTexture           ((PFNGLFRAMEBUFFERTEXTUREPROC)myglfunc[9])
+#define glDeleteShaderProgramv         ((PFNGLCREATESHADERPROGRAMVPROC)myglfunc[0])
+
 
 #ifdef DEBUG
 #define glGetProgramiv          ((PFNGLGETPROGRAMIVPROC)myglfunc[10])

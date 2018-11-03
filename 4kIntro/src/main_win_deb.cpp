@@ -249,7 +249,7 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return( 0 );
 	}
 
-    if( !intro_init() )
+    if( !intro_init(info->hWnd) )
     {
         window_end( info );
         MessageBox( 0, "intro_init()!","error",MB_OK|MB_ICONEXCLAMATION );
@@ -260,6 +260,11 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	InitSound();
 #endif
 
+#ifdef DEBUG
+	// end on music end
+	bool musicEnd = true;
+#endif
+
     long to = timeGetTime();
     while( !done )
     {
@@ -267,7 +272,6 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #ifndef SOUND_DISABLED
 		waveOutGetPosition(hWaveOut, &MMTime, sizeof(MMTIME));
 #endif
-
         while(PeekMessage(&msg, 0, 0, 0, PM_REMOVE) )
         {
             if( msg.message==WM_QUIT ) done=1;
@@ -281,8 +285,19 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         SwapBuffers( info->hDC );
         Sleep( 1 ); // give other processes some chance to do something
 
-		if (MMTime.u.sample >= MAX_SAMPLES)
+		if (MMTime.u.sample >= MAX_SAMPLES) {
+#ifdef DEBUG
+			// if we would end at the end of music, check if we should
+			if (musicEnd)
+				musicEnd = MessageBox(0, "Music ended. Continue running?", "Continue?", MB_YESNO | MB_ICONEXCLAMATION) != IDYES;
+			// if we would end at the end of music, do
+			if (musicEnd)
+				done=1;
+		}
+#else
 			done = 1;
+		}
+#endif
     }
 
     sndPlaySound( 0, 0 );

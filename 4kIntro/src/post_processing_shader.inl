@@ -11,8 +11,11 @@ const char *post_processing_shader_glsl =
  "in vec2 p;"
  "void main()"
  "{"
-   "vec2 v=.5*p+.5;"
-   "color=texture(inputTexture,v);"
+   "vec2 r=.5*p+.5;"
+   "if(r.x<.5)"
+     "color=vec4(r.x,0,r.y,0);"
+   "else"
+     " color=texture(inputTexture,r);"
  "}";
 
 #endif // POST_PROCESSING_SHADER_INL_

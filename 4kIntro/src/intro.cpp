@@ -3,33 +3,49 @@
 #include <windows.h>
 #include <GL/gl.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "config.h"
 #include "ext.h"
 #include "vertex_shader.inl"
 #include "fragment_shader.inl"
 #include "post_processing_shader.inl"
 #include "fp.h"
+#include "debug_help.h"
 
-static GLuint fragmentShader;
+//remove
+#include <direct.h>
+//#include <string.h>
+
+GLuint fragmentShader;
 static GLuint framebuffer;
 static GLuint texture;
 static GLuint depthTexture;
 static GLuint renderingPipeline;
 static GLuint postProcessingPipeline;
+GLuint postProcessingShader;
 
-int intro_init(void)
-{
+#ifdef DEBUG
+HWND hWnd;
+int  intro_init(HWND h){
+	hWnd = h;
+#else
+int  intro_init(void){
+#endif
+
 	if (!EXT_Init())
 		return 0;
 
 	GLuint vertexShader = glCreateShaderProgramv(GL_VERTEX_SHADER, 1, &vertex_shader_glsl);
 	fragmentShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &fragment_shader_glsl);
-	GLuint postProcessingShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &post_processing_shader_glsl);
+	postProcessingShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &post_processing_shader_glsl);
 
 	glGenProgramPipelines(1, &renderingPipeline);
 	glBindProgramPipeline(renderingPipeline);
 	glUseProgramStages(renderingPipeline, GL_VERTEX_SHADER_BIT, vertexShader);
 	glUseProgramStages(renderingPipeline, GL_FRAGMENT_SHADER_BIT, fragmentShader);
+	//glUseProgramStages(renderingPipeline, GL_FRAGMENT_SHADER_BIT, 0);
+	//glUseProgramStages(renderingPipeline, GL_FRAGMENT_SHADER_BIT, fragmentShader);
 
 	glGenProgramPipelines(1, &postProcessingPipeline);
 	glBindProgramPipeline(postProcessingPipeline);
@@ -79,11 +95,61 @@ int intro_init(void)
 
 static float fparams[4 * 4];
 
+#ifdef DEBUG
+long last_load = 0; // last shader load
+void reloadShaders() {
+	char cwd[300];
+	_getcwd(cwd, 300);
+	//MessageBox(0, cwd, ":)", MB_OK | MB_ICONINFORMATION);
+	char* shader = loadShader("src/fragment_shader.glsl");
+	//MessageBox(0, shader, ":)", MB_OK | MB_ICONINFORMATION);
+
+	int result;
+	char info[1536];
+
+	if (shader != nullptr) {
+		fragmentShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &shader);
+		glGetProgramiv(fragmentShader, GL_LINK_STATUS, &result);
+		glGetProgramInfoLog(fragmentShader, 1024, NULL, (char *)info);
+		if (!result) {
+			MessageBox(0, info, "Frag Error!", MB_OK | MB_ICONEXCLAMATION);
+		}
+		glUseProgramStages(renderingPipeline, GL_FRAGMENT_SHADER_BIT, fragmentShader);
+	}
+	shader = loadShader("src/post_processing_shader.glsl");
+	if (shader != nullptr) {
+		glGetProgramiv(postProcessingShader, GL_LINK_STATUS, &result);
+		glGetProgramInfoLog(postProcessingShader, 1024, NULL, (char *)info);
+		if (!result) {
+			MessageBox(0, info, "PostProcessing Error!", MB_OK | MB_ICONEXCLAMATION);
+		}
+		postProcessingShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &shader);
+		glUseProgramStages(postProcessingPipeline, GL_FRAGMENT_SHADER_BIT, postProcessingShader);
+	}
+}
+#endif
+
 void intro_do(long time)
 {
+#ifdef DEBUG
+	// Listen to CTRL+S.
+	if (hWnd == GetForegroundWindow()&&GetAsyncKeyState(VK_CONTROL) && GetAsyncKeyState('S'))
+	{
+		// Wait for a while to let the file system finish the file write.
+		if (time - last_load > 200) {
+			Sleep(100);
+			reloadShaders();
+		}
+		last_load = time;
+		//MessageBox(0, "Shaders Loaded", "Shaders Loaded", MB_OK | MB_ICONINFORMATION);
+	}
+#endif
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 	glBindProgramPipeline(renderingPipeline);
 	// Set fparams to give input to shaders
+	/*
+	fparams[0][0] = time in seconds
+	*/
 	fparams[0] = time / 1000.0f;
 	// Render
 	glProgramUniform4fv(fragmentShader, 0, 4, fparams);
