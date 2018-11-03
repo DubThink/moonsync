@@ -37,8 +37,8 @@ int  intro_init(void){
 		return 0;
 
 	GLuint vertexShader = glCreateShaderProgramv(GL_VERTEX_SHADER, 1, &vertex_shader_glsl);
-	fragmentShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &fragment_shader_glsl);
-	postProcessingShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &post_processing_shader_glsl);
+	fragmentShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &fragment_shader_glsl_pr);
+	postProcessingShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &post_processing_shader_glsl_pr);
 
 	glGenProgramPipelines(1, &renderingPipeline);
 	glBindProgramPipeline(renderingPipeline);
@@ -58,17 +58,21 @@ int  intro_init(void){
 	glGetProgramiv(vertexShader, GL_LINK_STATUS, &result);
 	glGetProgramInfoLog(vertexShader, 1024, NULL, (char *)info);
 	if (!result) {
-		MessageBox(0, info, "Error!", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(0, info, "Error Vert!", MB_OK | MB_ICONEXCLAMATION);
 	}
 	glGetProgramiv(fragmentShader, GL_LINK_STATUS, &result);
+	glGetShaderInfoLog(fragmentShader, 1024, NULL, (char *)info);
+	if (!result) {
+		MessageBox(0, info, "Frag Error! (1)", MB_OK | MB_ICONEXCLAMATION);
+	}
 	glGetProgramInfoLog(fragmentShader, 1024, NULL, (char *)info);
 	if (!result) {
-		MessageBox(0, info, "Error!", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(0, info, "Frag Error! (2)", MB_OK | MB_ICONEXCLAMATION);
 	}
 	glGetProgramiv(postProcessingShader, GL_LINK_STATUS, &result);
 	glGetProgramInfoLog(postProcessingShader, 1024, NULL, (char *)info);
 	if (!result) {
-		MessageBox(0, info, "Error!", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(0, info, "Error Post!", MB_OK | MB_ICONEXCLAMATION);
 	}
 #endif
 
@@ -96,27 +100,30 @@ int  intro_init(void){
 static float fparams[4 * 4];
 
 #ifdef DEBUG
-long last_load = 0; // last shader load
-void reloadShaders() {
-	char cwd[300];
-	_getcwd(cwd, 300);
-	//MessageBox(0, cwd, ":)", MB_OK | MB_ICONINFORMATION);
-	char* shader = loadShader("src/fragment_shader.glsl");
-	//MessageBox(0, shader, ":)", MB_OK | MB_ICONINFORMATION);
-
+void reloadFragmentShader() {
 	int result;
 	char info[1536];
-
+	WinExec("src\\preprocessor.py src\\fragment_shader.glsl", SW_HIDE);
+	char* shader = loadShader("src/fragment_shader.glsl.pr");
 	if (shader != nullptr) {
 		fragmentShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &shader);
 		glGetProgramiv(fragmentShader, GL_LINK_STATUS, &result);
+		glGetShaderInfoLog(fragmentShader, 1024, NULL, (char *)info);
+		if (!result) {
+			MessageBox(0, info, "Frag Error! (1)", MB_OK | MB_ICONEXCLAMATION);
+		}
 		glGetProgramInfoLog(fragmentShader, 1024, NULL, (char *)info);
 		if (!result) {
-			MessageBox(0, info, "Frag Error!", MB_OK | MB_ICONEXCLAMATION);
+			MessageBox(0, info, "Frag Error! (2)", MB_OK | MB_ICONEXCLAMATION);
 		}
 		glUseProgramStages(renderingPipeline, GL_FRAGMENT_SHADER_BIT, fragmentShader);
 	}
-	shader = loadShader("src/post_processing_shader.glsl");
+}
+void reloadPostShader(){
+	int result;
+	char info[1536];
+	WinExec("src\\preprocessor.py src\\post_processing_shader.glsl", SW_HIDE);
+	char* shader = loadShader("src/post_processing_shader.glsl");
 	if (shader != nullptr) {
 		glGetProgramiv(postProcessingShader, GL_LINK_STATUS, &result);
 		glGetProgramInfoLog(postProcessingShader, 1024, NULL, (char *)info);
@@ -127,18 +134,20 @@ void reloadShaders() {
 		glUseProgramStages(postProcessingPipeline, GL_FRAGMENT_SHADER_BIT, postProcessingShader);
 	}
 }
+long last_load = 0; // last shader load
 #endif
 
 void intro_do(long time)
 {
 #ifdef DEBUG
 	// Listen to CTRL+S.
-	if (hWnd == GetForegroundWindow()&&GetAsyncKeyState(VK_CONTROL) && GetAsyncKeyState('S'))
+	if (/*hWnd == GetForegroundWindow()&& */GetAsyncKeyState(VK_CONTROL) && GetAsyncKeyState('S'))
 	{
 		// Wait for a while to let the file system finish the file write.
 		if (time - last_load > 200) {
 			Sleep(100);
-			reloadShaders();
+			reloadFragmentShader();
+			reloadPostShader();
 		}
 		last_load = time;
 		//MessageBox(0, "Shaders Loaded", "Shaders Loaded", MB_OK | MB_ICONINFORMATION);

@@ -26,6 +26,7 @@ static char *strs[] = {
     #ifdef DEBUG
 	"glGetProgramiv",
 	"glGetProgramInfoLog",
+	"glGetShaderInfoLog",
     #endif
     };
 

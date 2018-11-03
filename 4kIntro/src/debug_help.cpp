@@ -16,7 +16,7 @@ char*  loadShader(const char* path) {
 		fseek(fragFile, 0, SEEK_END);
 		length = ftell(fragFile);
 		fseek(fragFile, 0, SEEK_SET);
-		buffer = (char*)malloc(length);
+		buffer = (char*)malloc(length+1);
 		if (buffer)
 		{
 			fread(buffer, 1, length, fragFile);
