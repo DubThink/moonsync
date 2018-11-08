@@ -13,14 +13,15 @@ const char *post_processing_shader_glsl_pr =
  "vec3 greenish()"
  "{"
    "return vec3(.2,.9,.35);"
- "}"
+ "}\n"
+ "#define time fpar[0].x\n"
  "void main()"
  "{"
    "vec2 v=.5*p+.5,l=v-vec2(.5,.5);"
-   "vec3 c=greenish();"
-   "float n=.2+.1*cos(atan(l.y,l.x)*10.+20.*l.x+1);"
-   "c*=smoothstep(n,n+.01,length(l));"
-   "color=vec4(c,1.);"
+   "vec3 f=greenish();"
+   "float t=.2+.1*cos(atan(l.y,l.x)*10.+20.*l.x+sin(time));"
+   "f*=smoothstep(t,t+.01,length(l));"
+   "color=vec4(f,1.);"
  "}";
 
 #endif // POST_PROCESSING_SHADER_INL_

@@ -80,9 +80,7 @@ call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/fragment_shader.glsl"
 call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/post_processing_shader.glsl"
 
 ECHO Minimizing fragment shader...
-"$(SolutionDir)shader_minifier.exe" "$(ProjectDir)src/fragment_shader.glsl.pr" --preserve-externals --preserve-all-globals -o "$(ProjectDir)src/fragment_shader.inl"
-ECHO Minimizing post processing shader...
-"$(SolutionDir)shader_minifier.exe" "$(ProjectDir)src/post_processing_shader.glsl.pr" --preserve-externals --preserve-all-globals -o "$(ProjectDir)src/post_processing_shader.inl"
+call "$(SolutionDir)minify_shaders.bat"
 ECHO Building 4klang...
 call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     </PreBuildEvent>
@@ -135,9 +133,7 @@ call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/fragment_shader.glsl"
 call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/post_processing_shader.glsl"
 
 ECHO Minimizing fragment shader...
-"$(SolutionDir)shader_minifier.exe" "$(ProjectDir)src/fragment_shader.glsl.pr" --preserve-externals --preserve-all-globals -o "$(ProjectDir)src/fragment_shader.inl"
-ECHO Minimizing post processing shader...
-"$(SolutionDir)shader_minifier.exe" "$(ProjectDir)src/post_processing_shader.glsl.pr" --preserve-externals --preserve-all-globals -o "$(ProjectDir)src/post_processing_shader.inl"
+call "$(SolutionDir)minify_shaders.bat"
 ECHO Building 4klang...
 call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     </PreBuildEvent>

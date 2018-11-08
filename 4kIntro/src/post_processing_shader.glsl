@@ -5,8 +5,7 @@ layout (location=0) out vec4 color;
 uniform sampler2D inputTexture;
 in vec2 p;
 
-#include util.glsl
-#define time fpar[0].x
+#include common.glsl
 
 void main()
 {

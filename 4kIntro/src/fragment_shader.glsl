@@ -5,7 +5,7 @@ layout (location=0) out vec4 color;
 in vec2 p;
 
 // #include noise1.glsl
-#include util.glsl
+#include common.glsl
 
 void main()
 {
