@@ -22,7 +22,7 @@ char*  loadShader(const char* path) {
 			// fread has this nifty little feature where it doesn't bother with CR chars,
 			// meaning that it reads less than length. Therefore, we grab how much it actually
 			// read and set a \0 to terminate it.
-			int actual = fread(buffer, length, 1, fragFile);
+			int actual = fread(buffer, 1, length, fragFile);
 			buffer[actual] = 0;
 
 		}
