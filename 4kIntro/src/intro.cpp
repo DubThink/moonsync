@@ -100,39 +100,85 @@ int  intro_init(void){
 static float fparams[4 * 4];
 
 #ifdef DEBUG
+// from https://stackoverflow.com/questions/12554237/hiding-command-prompt-called-by-system
+/* Silently runs system commands in the background. */
+int system_hidden(const char *cmdArgs)
+{
+	PROCESS_INFORMATION pinfo;
+	STARTUPINFO sinfo;
+
+	/*
+	 * Allocate and hide console window
+	 */
+	AllocConsole();
+	ShowWindow(GetConsoleWindow(), 0);
+
+	memset(&sinfo, 0, sizeof(sinfo));
+	sinfo.cb = sizeof(sinfo);
+	CreateProcess(NULL, (char*)cmdArgs,
+		NULL, NULL, false,
+		0,
+		NULL, NULL, &sinfo, &pinfo);
+	DWORD ret;
+	while (1)
+	{
+		HANDLE array[1];
+		array[0] = pinfo.hProcess;
+		ret = MsgWaitForMultipleObjects(1, array, false, INFINITE,
+			QS_ALLPOSTMESSAGE);
+		if ((ret == WAIT_FAILED) || (ret == WAIT_OBJECT_0))
+			break;
+		/*
+		 * Don't block message loop
+		 */
+		MSG msg;
+		while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+
+	DWORD pret;
+	GetExitCodeProcess(pinfo.hProcess, &pret);
+	//    FreeConsole ();
+	return pret;
+}
 void reloadFragmentShader() {
 	int result;
 	char info[1536];
-	WinExec("src\\preprocessor.py src\\fragment_shader.glsl", SW_HIDE);
+	system_hidden("cmd /c python src\\preprocessor.py src\\fragment_shader.glsl");
 	char* shader = loadShader("src/fragment_shader.glsl.pr");
+	//MessageBox(0, shader, "Frag Shader", MB_OK | MB_ICONEXCLAMATION);
 	if (shader != nullptr) {
 		fragmentShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &shader);
 		glGetProgramiv(fragmentShader, GL_LINK_STATUS, &result);
-		glGetShaderInfoLog(fragmentShader, 1024, NULL, (char *)info);
-		if (!result) {
-			MessageBox(0, info, "Frag Error! (1)", MB_OK | MB_ICONEXCLAMATION);
-		}
 		glGetProgramInfoLog(fragmentShader, 1024, NULL, (char *)info);
 		if (!result) {
-			MessageBox(0, info, "Frag Error! (2)", MB_OK | MB_ICONEXCLAMATION);
+			MessageBox(0, info, "Frag Error!", MB_OK | MB_ICONEXCLAMATION);
 		}
 		glUseProgramStages(renderingPipeline, GL_FRAGMENT_SHADER_BIT, fragmentShader);
 	}
+	else
+		MessageBox(0, info, "Unable to load frag shader!", MB_OK | MB_ICONEXCLAMATION);
 }
 void reloadPostShader(){
 	int result;
 	char info[1536];
-	WinExec("src\\preprocessor.py src\\post_processing_shader.glsl", SW_HIDE);
-	char* shader = loadShader("src/post_processing_shader.glsl");
+	system_hidden("cmd /c python src\\preprocessor.py src\\post_processing_shader.glsl");
+	char* shader = loadShader("src/post_processing_shader.glsl.pr");
+	//MessageBox(0, shader, "Post Shader", MB_OK | MB_ICONEXCLAMATION);
 	if (shader != nullptr) {
+		postProcessingShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &shader);
 		glGetProgramiv(postProcessingShader, GL_LINK_STATUS, &result);
 		glGetProgramInfoLog(postProcessingShader, 1024, NULL, (char *)info);
 		if (!result) {
 			MessageBox(0, info, "PostProcessing Error!", MB_OK | MB_ICONEXCLAMATION);
 		}
-		postProcessingShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &shader);
 		glUseProgramStages(postProcessingPipeline, GL_FRAGMENT_SHADER_BIT, postProcessingShader);
-	}
+	} else 
+		MessageBox(0, info, "Unable to load post processing shader!", MB_OK | MB_ICONEXCLAMATION);
+
 }
 long last_load = 0; // last shader load
 #endif
@@ -145,7 +191,7 @@ void intro_do(long time)
 	{
 		// Wait for a while to let the file system finish the file write.
 		if (time - last_load > 200) {
-			Sleep(100);
+			Sleep(200);
 			reloadFragmentShader();
 			reloadPostShader();
 		}
@@ -167,6 +213,7 @@ void intro_do(long time)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindProgramPipeline(postProcessingPipeline);
 	glBindTexture(GL_TEXTURE_2D, texture);
+	glProgramUniform4fv(postProcessingShader, 0, 4, fparams);
 	glRects(-1, -1, 1, 1);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
