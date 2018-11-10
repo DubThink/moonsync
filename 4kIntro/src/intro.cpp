@@ -206,6 +206,8 @@ void intro_do(long time)
 	fparams[0][0] = time in seconds
 	*/
 	fparams[0] = time / 1000.0f;
+	fparams[1] = 1920;
+	fparams[2] = 1080;
 	// Render
 	glProgramUniform4fv(fragmentShader, 0, 4, fparams);
 	glRects(-1, -1, 1, 1); // Deprecated. Still seems to work though.

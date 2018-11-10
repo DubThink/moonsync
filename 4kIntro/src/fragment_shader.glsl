@@ -1,35 +1,55 @@
 #version 430
 
+precision mediump float;
+
 layout (location=0) uniform vec4 fpar[4];
 layout (location=0) out vec4 color;
 in vec2 p;
 
-// #include noise1.glsl
-#include common.glsl
+#define time fpar[0].x
+vec2 resolution = vec2(1920, 1080);
 
-void main()
+struct Camera
 {
-	// float t;
-	// t = fpar[0].x * 1.0;
- //    vec2 r = vec2(1920.0,1080.0),
- //    o = gl_FragCoord.xy - r/2.;
- //    o = vec2(length(o) / r.y - .3, atan(o.y,o.x));
- //    vec4 s = 0.07*cos(1.5*vec4(0,1,2,3) + t + o.y + sin(o.y) * cos(t)),
- //    e = s.yzwx,
- //    f = max(o.x-s,e-o.x);
-	// color = dot(clamp(f*r.y,0.,1.), 72.*(s-e)) * (s-.1) + f;
-	vec2 st = gl_FragCoord.xy/vec2(1280,720);
-    // Scale the coordinate system to see
-    // some noise in action
-    vec2 pos = vec2(st*20.0);
+	vec3 position;
+	
+	// Camera space stuff
+	vec3 forwards;
+	vec3 left; // remove left/up to save space in future
+	vec3 up;
+	
+	vec3 rayDir;
+};
 
-    // Use the noise function
-    // float m = cellular(pos*.5).x;
-    // float n = noise(pos)*.1+.05;
-    // float v = m<n?n-m:n;
-    // vec2 m = cellular(pos*.5);
-    // m.x=m.x+fpar[0].x;
+Camera getCam()
+{
+	Camera cam;
+	vec3 lookAt = vec3(0, 0, 0);
+	
+	cam.position = vec3(cos(time)*10.0, 3.0, sin(time)*10.0);
+	
+	// figure out camera space from position and lookAt
+	cam.up = vec3(0, 1, 0);
+	cam.forwards = normalize(lookAt - cam.position);
+	cam.left = cross(cam.forwards, cam.up);
+	cam.up = cross(cam.left, cam.forwards);
+	
+	// find view ray - fustrum intersection for this pixel
+	vec3 fustrumFront = cam.position + cam.forwards;
+	vec2 screenSpace = 2.0*gl_FragCoord.xy/resolution.xy - 1.0;
+	float aspect = resolution.x/resolution.y;
+	vec3 fustrumIntersect = fustrumFront + screenSpace.x*cam.left*aspect + screenSpace.y*cam.up;
+	
+	// direction to march in
+	cam.rayDir = normalize(fustrumIntersect-cam.position);
+	
+	return cam;
+}
+	
+void main(void) {
+	Camera cam1 = getCam();
 
+	vec3 poos = cam1.rayDir;
 
-    color = vec4(greenish()*st.x, 1.0);
+	color = vec4(sin(poos.x*50.0), sin(poos.y*50.0), sin(poos.z*50.0), 1.0);
 }
