@@ -6,8 +6,8 @@ layout (location=0) uniform vec4 fpar[4];
 layout (location=0) out vec4 color;
 in vec2 p;
 
-#define time fpar[0].x
-vec2 resolution = vec2(1920, 1080);
+#define TIME fpar[0].x
+vec2 resolution = vec2(1280, 720);
 
 struct Camera
 {
@@ -26,7 +26,7 @@ Camera getCam()
 	Camera cam;
 	vec3 lookAt = vec3(0, 0, 0);
 	
-	cam.position = vec3(cos(time)*10.0, 3.0, sin(time)*10.0);
+	cam.position = vec3(cos(TIME/4.0)*10.0, 3.0, sin(TIME/4.0)*10.0);
 	
 	// figure out camera space from position and lookAt
 	cam.up = vec3(0, 1, 0);
@@ -51,5 +51,5 @@ void main(void) {
 
 	vec3 poos = cam1.rayDir;
 
-	color = vec4(sin(poos.x*50.0), sin(poos.y*50.0), sin(poos.z*50.0), 1.0);
+	color = vec4(abs(vec3(sin(poos.x*50.0), sin(poos.y*50.0), sin(poos.z*50.0))), 1.0);
 }
