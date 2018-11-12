@@ -80,7 +80,7 @@ call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/fragment_shader.glsl"
 call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/post_processing_shader.glsl"
 
 ECHO Minimizing fragment shader...
-call "$(SolutionDir)minify_shaders.bat"
+call "$(SolutionDir)minify_shaders.bat" "$(SolutionDir)"
 ECHO Building 4klang...
 call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     </PreBuildEvent>
@@ -133,7 +133,7 @@ call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/fragment_shader.glsl"
 call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/post_processing_shader.glsl"
 
 ECHO Minimizing fragment shader...
-call "$(SolutionDir)minify_shaders.bat"
+call "$(SolutionDir)minify_shaders.bat" "$(SolutionDir)"
 ECHO Building 4klang...
 call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     </PreBuildEvent>

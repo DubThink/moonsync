@@ -1,17 +1,18 @@
+//#version 430 auto included by the preprocessor
 
-// TODO List: 
+// TODO List:
 // seperate stuff into files
 // Add to uniforms (lights, etc.)
 // Benjamin noise stuff
 // Everything
 
-#version 430
 
 // ----------------------------------------------------- //
 // Big globals
 // ----------------------------------------------------- //
 
-precision mediump float;
+// should be included, but the minifier has issues with it
+//precision mediump float;
 
 layout (location=0) uniform vec4 fpar[4];
 layout (location=0) out vec4 color;
@@ -28,12 +29,12 @@ vec2 resolution = vec2(1280, 720); // TODO: get this as a uniform
 struct Camera
 {
 	vec3 position;
-	
+
 	// Camera space stuff
 	vec3 forwards;
 	vec3 left; // remove left/up to save space in future
 	vec3 up;
-	
+
 	vec3 rayDir;
 };
 
@@ -67,7 +68,7 @@ float sdBox( vec3 p, vec3 b )
 {
   vec3 d = abs(p) - b;
   return length(max(d,0.0))
-         + min(max(d.x,max(d.y,d.z)),0.0); // remove this line for an only partially signed sdf 
+         + min(max(d.x,max(d.y,d.z)),0.0); // remove this line for an only partially signed sdf
 }
 
 float worldSDF(in vec3 v)
@@ -95,7 +96,7 @@ float worldSDF(in vec3 v)
 	sdf_agg = opSmoothUnion(sphere5, sdf_agg, sin(TIME)*2.0+2.0);
 
 	sdf_agg = opSmoothUnion(sdf_agg, plane, 3.0);
-	
+
 	sdf_agg = opSmoothUnion(sdf_agg, sdBox(v, vec3(1.0, 10.0, 1.0)), 1.5);
 
 	return sdf_agg;
@@ -111,12 +112,12 @@ const float MAX_DIST = 1000.0;
 
 // @param ray origin and ray direction
 raymarchResult worldMarch(in vec3 ro, in vec3 rd) {
-	
+
 	raymarchResult marched;
 	marched.diffuse_color = vec3(0.5); // "sky" color
-	
+
 	for(int i = 0; i < MAX_STEPS; i++) {
-		
+
 		float samp = worldSDF(ro); // find SDF at current march position
 
 		// If SDF is low enough, handle the collision.
@@ -139,7 +140,7 @@ raymarchResult worldMarch(in vec3 ro, in vec3 rd) {
 	marched.position = ro;
 
 	return marched;
-};
+}
 
 // Tetrahedron technique from http://iquilezles.org/www/articles/normalsSDF/normalsSDF.htm
 vec3 calcWorldNormal(in vec3 p)
@@ -156,27 +157,27 @@ Camera getCam()
 {
 	Camera cam;
 	vec3 lookAt = vec3(0, 12, 0);
-	
+
 	cam.position = vec3(cos(TIME)*10.0,15+ 3.0, sin(TIME)*10.0);
-	
+
 	// figure out camera space from position and lookAt
 	cam.up = vec3(0, 1, 0);
 	cam.forwards = normalize(lookAt - cam.position);
 	cam.left = cross(cam.forwards, cam.up);
 	cam.up = cross(cam.left, cam.forwards);
-	
+
 	// find view ray - fustrum intersection for this pixel
 	vec3 fustrumFront = cam.position + cam.forwards;
 	vec2 screenSpace = 2.0*gl_FragCoord.xy/resolution.xy - 1.0;
 	float aspect = resolution.x/resolution.y;
 	vec3 fustrumIntersect = fustrumFront + screenSpace.x*cam.left*aspect + screenSpace.y*cam.up;
-	
+
 	// direction to march in
 	cam.rayDir = normalize(fustrumIntersect-cam.position);
-	
+
 	return cam;
 }
-	
+
 void main(void) {
 	Camera cam1 = getCam();
 

@@ -1,4 +1,4 @@
-#version 430
+//#version 430 auto included by the preprocessor
 
 layout (location=0) uniform vec4 fpar[4];
 layout (location=0) out vec4 color;

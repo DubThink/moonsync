@@ -5,4 +5,5 @@
 *.vcxproj.user
 *.opendb
 *.glsl.pr
+*.glsl.prindex
 4klang.obj
