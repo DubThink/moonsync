@@ -67,7 +67,12 @@ float worldSDF(in vec3 v)
 
 	float sphere2 = sphereSDF(v, vec3(-4.0, 0.0, 0.0), 3.0);
 
-	sdf_agg = opSmoothUnion(sphere1, sphere2, 3.0); // unionize the spheres to make a... pinecone
+	sdf_agg = opSmoothUnion(sphere1, sphere2, sin(TIME)*2.0+2.0); // unionize the spheres to make a... pinecone
+
+	sdf_agg = max(sdf_agg, -sphereSDF(cos(v), vec3(1.0, 3.0, 2.0), 4.0));
+
+	//sdf_agg = abs(cos(sin(v.x)) + cos(v.y) + cos(v.z)) - 0.5;
+	//sdf_agg = max(sdf_agg, sphereSDF(v, vec3(0.0, 0.0, 0.0), 8.0));
 
 	return sdf_agg;
 }
@@ -76,7 +81,7 @@ float worldSDF(in vec3 v)
 // Rendering
 // ----------------------------------------------------- //
 
-const int MAX_STEPS = 60;
+const int MAX_STEPS = 500;
 const float MIN_HIT_DIST = 0.001;
 
 // @param ray origin and ray direction
@@ -86,17 +91,18 @@ raymarchResult worldMarch(in vec3 ro, in vec3 rd) {
 	marched.diffuse_color = vec3(0,0,0); // "sky" color
 	
 	for(int i = 0; i < MAX_STEPS; i++) {
+		
 		float samp = worldSDF(ro); // find SDF at current march position
 
 		// If SDF is low enough, handle the collision.
 		if(samp < MIN_HIT_DIST) {
-			marched.diffuse_color = vec3(1.0);
-			//break; // This, uhh, "wobbles" everything when it's active, and I don't know what to do about it. Working on that.
+			marched.diffuse_color = vec3(0.1) + vec3(float(i)/float(MAX_STEPS)*4.0);
+			break; // This, uhh, "wobbles" everything when it's active, and I don't know what to do about it. Working on that.
 					 // I tried putting the whole if() after the ro incrementation, but it didn't do anything.
 		}
 
 		// Step ray forwards by SDF
-		ro += rd*samp;
+		ro += (sin(ro)*abs(sin(TIME)/3.0) + rd)*samp; // make the rays go wiggly here
 	}
 	marched.position = ro;
 
@@ -119,7 +125,7 @@ Camera getCam()
 	Camera cam;
 	vec3 lookAt = vec3(0, 0, 0);
 	
-	cam.position = vec3(cos(TIME/2.0)*10.0, 3.0, sin(TIME/2.0)*10.0);
+	cam.position = vec3(cos(TIME)*10.0, 3.0, sin(TIME)*10.0);
 	
 	// figure out camera space from position and lookAt
 	cam.up = vec3(0, 1, 0);
@@ -148,6 +154,6 @@ void main(void) {
 
 	color += vec4(testMarch.diffuse_color*max(0, dot(norm, normalize(vec3(1.0, 1.0, 0.0))))*vec3(1.0, 1.0, 1.0), 1.0);
 	color += vec4(testMarch.diffuse_color*max(0, dot(norm, normalize(vec3(0.1, -1.0, 0.2))))*vec3(0.3, 0.3, 0.5), 0.0);
-	color += vec4(testMarch.diffuse_color*max(0, dot(norm, normalize(vec3(-0.9, 1.0, 0.2))))*vec3(0.8, 0.5, 0.2), 0.0);
+	color += vec4(testMarch.diffuse_color*max(0, dot(norm, normalize(vec3(-0.9, 1.0, 0.2))))*vec3(vec3(abs(sin(TIME)), abs(sin(TIME+1)), abs(sin(TIME+2)))), 0.0);
 	//color = vec4(testMarch.diffuse_color, 1.0);
 }
