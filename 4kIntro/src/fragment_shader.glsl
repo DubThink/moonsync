@@ -18,7 +18,7 @@ layout (location=0) uniform vec4 fpar[4];
 layout (location=0) out vec4 color;
 in vec2 p;
 
-vec2 resolution = vec2(1280, 720); // TODO: get this as a uniform
+vec2 resolution = vec2(fpar[0].y, fpar[0].z); // TODO: get this as a uniform
 
 #define TIME fpar[0].x
 

@@ -25,6 +25,8 @@ static GLuint renderingPipeline;
 static GLuint postProcessingPipeline;
 GLuint postProcessingShader;
 
+static float fparams[4 * 4];
+
 #ifdef DEBUG
 HWND hWnd;
 int  intro_init(HWND h){
@@ -94,10 +96,11 @@ int  intro_init(void){
 	static const GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
 	glDrawBuffers(1, drawBuffers);
 
+	fparams[1] = XRES;
+	fparams[2] = YRES;
+
 	return 1;
 }
-
-static float fparams[4 * 4];
 
 #ifdef DEBUG
 // from https://stackoverflow.com/questions/12554237/hiding-command-prompt-called-by-system
@@ -204,10 +207,13 @@ void intro_do(long time)
 	// Set fparams to give input to shaders
 	/*
 	fparams[0][0] = time in seconds
+	fparams[0][1] = XRES
+	fparams[0][2] = YRES
+	fparams[1].xyz = camera pos
+	fparams[2].xyz = look dir
 	*/
 	fparams[0] = time / 1000.0f;
-	fparams[1] = 1920;
-	fparams[2] = 1080;
+
 	// Render
 	glProgramUniform4fv(fragmentShader, 0, 4, fparams);
 	glRects(-1, -1, 1, 1); // Deprecated. Still seems to work though.
