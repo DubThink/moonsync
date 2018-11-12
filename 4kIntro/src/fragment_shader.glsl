@@ -58,21 +58,45 @@ float sphereSDF(in vec3 v, in vec3 center, in float radius)
 	return length(v - center) - radius;
 }
 
+float sdPlane( vec3 p, vec4 n ) {
+  // n must be normalized
+  return dot(p,n.xyz) + n.w + sin(p.x/10.0)*3.0 + sin(p.z/10.0)*3.0;
+}
+
+float sdBox( vec3 p, vec3 b )
+{
+  vec3 d = abs(p) - b;
+  return length(max(d,0.0))
+         + min(max(d.x,max(d.y,d.z)),0.0); // remove this line for an only partially signed sdf 
+}
+
 float worldSDF(in vec3 v)
 {
 	float sdf_agg = 0.0;
 
-	float sphere1 = sphereSDF(v, vec3(2.0,0,0), 5.0);
-	sphere1 += sin(4.0 * v.x) * sin(4.0 * v.y) * sin(4.0 * v.z) * 0.25; // blobs on this sphere
+	float plane = sdPlane(v, vec4(0, 1.0, 0.0, 1.0));
 
-	float sphere2 = sphereSDF(v, vec3(-4.0, 0.0, 0.0), 3.0);
+	float blob = sin(4.0 * v.x) * sin(4.0 * v.y) * sin(4.0 * v.z) * 0.25 + sin(v.x) * sin(v.y) * sin(v.z); // blobs on this sphere
 
-	sdf_agg = opSmoothUnion(sphere1, sphere2, sin(TIME)*2.0+2.0); // unionize the spheres to make a... pinecone
+	vec3 q = v.xyz;
 
-	sdf_agg = max(sdf_agg, -sphereSDF(cos(v), vec3(1.0, 3.0, 2.0), 4.0));
+	v.xz = mod(v.xz, vec2(20.0, 20.0)) - vec2(10.0, 10.0);
 
-	//sdf_agg = abs(cos(sin(v.x)) + cos(v.y) + cos(v.z)) - 0.5;
-	//sdf_agg = max(sdf_agg, sphereSDF(v, vec3(0.0, 0.0, 0.0), 8.0));
+	float sphere1 = sphereSDF(v, vec3(-0.0,10 - sin(q.x/10.0)*3.0 - sin(q.z/10.0),0), 4.0);
+
+	float sphere2 = sphereSDF(v, vec3(-5.0, 10.0 - sin(q.x/10.0)*3.0 - sin(q.z/10.0)*3.0, 0.0), 2.0);
+	float sphere3 = sphereSDF(v, vec3(0.0, 10.0 - sin(q.x/10.0)*3.0 - sin(q.z/10.0)*3.0, 5.0), 2.0);
+	float sphere4 = sphereSDF(v, vec3(0.0, 10.0 - sin(q.x/10.0)*3.0 - sin(q.z/10.0)*3.0, -5.0), 2.0);
+	float sphere5 = sphereSDF(v, vec3(5.0, 10.0 - sin(q.x/10.0)*3.0 - sin(q.z/10.0)*3.0, 0.0), 2.0);
+
+	float c1 = opSmoothUnion(sphere1, sphere2, sin(TIME)*2.0+2.0); // unionize the spheres to make a... pinecone
+	float c2 = opSmoothUnion(sphere3, sphere4, sin(TIME)*2.0+2.0);
+	sdf_agg = opSmoothUnion(c1, c2, sin(TIME)*2.0+2.0);
+	sdf_agg = opSmoothUnion(sphere5, sdf_agg, sin(TIME)*2.0+2.0);
+
+	sdf_agg = opSmoothUnion(sdf_agg, plane, 3.0);
+	
+	sdf_agg = opSmoothUnion(sdf_agg, sdBox(v, vec3(1.0, 10.0, 1.0)), 1.5);
 
 	return sdf_agg;
 }
@@ -81,28 +105,36 @@ float worldSDF(in vec3 v)
 // Rendering
 // ----------------------------------------------------- //
 
-const int MAX_STEPS = 500;
+const int MAX_STEPS = 200;
 const float MIN_HIT_DIST = 0.001;
+const float MAX_DIST = 1000.0;
 
 // @param ray origin and ray direction
 raymarchResult worldMarch(in vec3 ro, in vec3 rd) {
 	
 	raymarchResult marched;
-	marched.diffuse_color = vec3(0,0,0); // "sky" color
+	marched.diffuse_color = vec3(0.5); // "sky" color
 	
 	for(int i = 0; i < MAX_STEPS; i++) {
 		
 		float samp = worldSDF(ro); // find SDF at current march position
 
 		// If SDF is low enough, handle the collision.
-		if(samp < MIN_HIT_DIST) {
-			marched.diffuse_color = vec3(0.1) + vec3(float(i)/float(MAX_STEPS)*4.0);
+		if(abs(samp) < MIN_HIT_DIST) {
+			//marched.diffuse_color = vec3(float(i)/float(MAX_STEPS));
+			marched.diffuse_color = vec3(1.0, smoothstep(0.25,0.3,distance(vec2(0.5,0.5),fract(ro.xz))), 1.0);
 			break; // This, uhh, "wobbles" everything when it's active, and I don't know what to do about it. Working on that.
 					 // I tried putting the whole if() after the ro incrementation, but it didn't do anything.
 		}
+		if(length(ro) > MAX_DIST) {
+			marched.diffuse_color = vec3(0.0);
+
+			break;
+		}
 
 		// Step ray forwards by SDF
-		ro += (sin(ro)*abs(sin(TIME)/3.0) + rd)*samp; // make the rays go wiggly here
+		//ro += (sin(ro)*abs(sin(TIME)/3.0) + rd)*samp; // make the rays go wiggly here
+		ro += rd*samp;
 	}
 	marched.position = ro;
 
@@ -123,9 +155,9 @@ vec3 calcWorldNormal(in vec3 p)
 Camera getCam()
 {
 	Camera cam;
-	vec3 lookAt = vec3(0, 0, 0);
+	vec3 lookAt = vec3(0, 12, 0);
 	
-	cam.position = vec3(cos(TIME)*10.0, 3.0, sin(TIME)*10.0);
+	cam.position = vec3(cos(TIME)*10.0,15+ 3.0, sin(TIME)*10.0);
 	
 	// figure out camera space from position and lookAt
 	cam.up = vec3(0, 1, 0);
@@ -155,5 +187,9 @@ void main(void) {
 	color += vec4(testMarch.diffuse_color*max(0, dot(norm, normalize(vec3(1.0, 1.0, 0.0))))*vec3(1.0, 1.0, 1.0), 1.0);
 	color += vec4(testMarch.diffuse_color*max(0, dot(norm, normalize(vec3(0.1, -1.0, 0.2))))*vec3(0.3, 0.3, 0.5), 0.0);
 	color += vec4(testMarch.diffuse_color*max(0, dot(norm, normalize(vec3(-0.9, 1.0, 0.2))))*vec3(vec3(abs(sin(TIME)), abs(sin(TIME+1)), abs(sin(TIME+2)))), 0.0);
+	vec3 ldir = normalize(vec3(1, -1, 1));
+	vec3 reflected = reflect(-ldir, norm);
+	float spec = pow(max(0.0, dot(reflected, cam1.rayDir)), 200.0);
+	color.xyz += vec3(spec)*testMarch.diffuse_color;
 	//color = vec4(testMarch.diffuse_color, 1.0);
 }
