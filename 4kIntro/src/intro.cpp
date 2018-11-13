@@ -188,6 +188,7 @@ long last_load = 0; // last shader load
 #endif
 DebugCamera cam;
 
+long last_time = 0;
 void intro_do(long time)
 {
 #ifdef DEBUG
@@ -207,7 +208,7 @@ void intro_do(long time)
 
 	// -------------- CAMERA CONTROL
 	if (hWnd == GetForegroundWindow()) {
-		cam.speed = GetAsyncKeyState(VK_SHIFT) ? 1.0 : 0.1;
+		cam.speed = (GetAsyncKeyState(VK_SHIFT) ? 1.0 : 0.1)*(time-last_time)/20.0;
 		if (GetAsyncKeyState('W'))cam.moveForward(1);
 		if (GetAsyncKeyState('S'))cam.moveForward(-1);
 		if (GetAsyncKeyState('A'))cam.moveRight(-1);
@@ -248,4 +249,5 @@ void intro_do(long time)
 	glProgramUniform4fv(postProcessingShader, 0, 4, fparams);
 	glRects(-1, -1, 1, 1);
 	glBindTexture(GL_TEXTURE_2D, 0);
+	last_time = time;
 }
