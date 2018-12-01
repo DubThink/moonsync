@@ -38,10 +38,18 @@ struct Camera
 	vec3 rayDir;
 };
 
+struct Material {
+	vec3 diffuseColor;
+	float specular;
+	float shininess;
+};
+
 struct raymarchResult
 {
 	vec3 position;
-	vec3 diffuse_color;
+	vec3 normal;
+	bool hit;
+	Material material;
 };
 
 // ----------------------------------------------------- //
@@ -49,7 +57,8 @@ struct raymarchResult
 // ----------------------------------------------------- //
 
 // copy-pasted from IQ
-float opSmoothUnion( float d1, float d2, float k ) {
+float opSmoothUnion( float d1, float d2, float k )
+{
     float h = clamp( 0.5 + 0.5*(d2-d1)/k, 0.0, 1.0 );
     return mix( d2, d1, h ) - k*h*(1.0-h);
 }
@@ -77,7 +86,7 @@ float worldSDF(in vec3 v)
 
 	float plane = sdPlane(v, vec4(0, 1.0, 0.0, 1.0));
 
-	float blob = sin(4.0 * v.x) * sin(4.0 * v.y) * sin(4.0 * v.z) * 0.25 + sin(v.x) * sin(v.y) * sin(v.z); // blobs on this sphere
+	float blob = sin(4.0 * v.x) * sin(4.0 * v.y) * sin(4.0 * v.z) * 0.25 + sin(v.x) * sin(v.y) * sin(v.z)*0.1; // blobs on this sphere
 
 	vec3 q = v.xyz;
 
@@ -97,68 +106,155 @@ float worldSDF(in vec3 v)
 
 	sdf_agg = opSmoothUnion(sdf_agg, plane, 3.0);
 
-	sdf_agg = opSmoothUnion(sdf_agg, sdBox(v, vec3(1.0, 10.0, 1.0)), 1.5);
+	//sdf_agg = max(sdf_agg, -sdBox(v, vec3(4.0, 10.0, 4.0)));
+	sdf_agg = opSmoothUnion(sdf_agg, sdBox(v, vec3(1.0, 10.0, 1.0)), 3.5);
 
 	return sdf_agg;
 }
 
 // ----------------------------------------------------- //
-// Rendering
+// Lights
 // ----------------------------------------------------- //
 
-const int MAX_STEPS = 200;
-const float MIN_HIT_DIST = 0.001;
-const float MAX_DIST = 1000.0;
 
-// @param ray origin and ray direction
-raymarchResult worldMarch(in vec3 ro, in vec3 rd) {
 
-	raymarchResult marched;
-	marched.diffuse_color = vec3(0.5); // "sky" color
-
-	for(int i = 0; i < MAX_STEPS; i++) {
-
-		float samp = worldSDF(ro); // find SDF at current march position
-
-		// If SDF is low enough, handle the collision.
-		if(abs(samp) < MIN_HIT_DIST) {
-			//marched.diffuse_color = vec3(float(i)/float(MAX_STEPS));
-			marched.diffuse_color = vec3(1.0, smoothstep(0.25,0.3,distance(vec2(0.5,0.5),fract(ro.xz))), 1.0);
-			break; // This, uhh, "wobbles" everything when it's active, and I don't know what to do about it. Working on that.
-					 // I tried putting the whole if() after the ro incrementation, but it didn't do anything.
-		}
-		if(length(ro) > MAX_DIST) {
-			marched.diffuse_color = vec3(0.0);
-
-			break;
-		}
-
-		// Step ray forwards by SDF
-		//ro += (sin(ro)*abs(sin(TIME)/3.0) + rd)*samp; // make the rays go wiggly here
-		ro += rd*samp;
-	}
-	marched.position = ro;
-
-	return marched;
-}
+// ----------------------------------------------------- //
+// Rendering
+// ----------------------------------------------------- //
 
 // Tetrahedron technique from http://iquilezles.org/www/articles/normalsSDF/normalsSDF.htm
 vec3 calcWorldNormal(in vec3 p)
 {
     const float h = 0.0001;
-    const vec2 k = vec2(1,-1);
+    const vec2 k = vec2(1.0,-1.0);
     return normalize(k.xyy*worldSDF(p + k.xyy*h) +
                      k.yyx*worldSDF(p + k.yyx*h) +
                      k.yxy*worldSDF(p + k.yxy*h) +
                      k.xxx*worldSDF(p + k.xxx*h));
 }
 
+const float MIN_HIT_DIST = 0.001;
+const float MAX_DIST = 1000.0;
+const float SPEED_MULTIPLIER = 1.0;
+
+// @param ray origin and ray direction
+raymarchResult worldMarch(in vec3 ro, in vec3 rd, const int MAX_STEPS) {
+
+	raymarchResult marched;
+
+	marched.hit = true;
+	for(int i = 0; i < MAX_STEPS; i++) {
+
+		float samp = worldSDF(ro); // find SDF at current march position
+
+		// If SDF is low enough, handle the collision.
+		if(abs(samp) < MIN_HIT_DIST) {
+			break;
+		}
+		if(length(ro) > MAX_DIST) {
+			marched.hit = false;
+			break;
+		}
+		// Step ray forwards by SDF
+		ro += rd*samp*SPEED_MULTIPLIER;
+	}
+	marched.position = ro;
+	marched.normal = calcWorldNormal(ro);
+
+	return marched;
+}
+
+float worldShadow(in vec3 ro, in vec3 rd, float hardness, const int MAX_STEPS) {
+	
+	ro += rd*MIN_HIT_DIST*30.0; // Increasing the factor here decreases the chance of banding, but makes less accurate shadows.
+
+	float light = 1.0;
+	float dist = 0.0;
+	float psamp = 1e20;
+
+	for(int i = 0; i < MAX_STEPS; i++) {
+		float samp = worldSDF(ro);
+
+		float y = samp*samp/(2.0*psamp);
+		float d = sqrt(samp*samp-y*y);
+
+		light = min(light, hardness*d/max(0.0, dist-y));
+
+		if(samp < MIN_HIT_DIST) {
+			return 0.0;
+		}
+		if(length(ro) > MAX_DIST) {
+			break;
+		}
+
+		ro += rd*samp;
+		dist += samp;
+		psamp = samp;
+	}
+	return light;
+}
+
+vec3 render3(in vec3 ro, in vec3 rd)
+{
+	raymarchResult cameraCast = worldMarch(ro, rd, 200);
+	if(!cameraCast.hit) return vec3(0.0); // sky color
+	vec3 diffuse = cameraCast.material.diffuseColor;
+
+	vec3 lightDir = normalize(vec3(0.9, -1.0, 0.2));
+	diffuse = max(vec3(0.0), dot(-lightDir, cameraCast.normal))*0.5*vec3(0.4, 0.8, 1.0);
+	vec3 cool = vec3(worldShadow(cameraCast.position, -lightDir, 20.0,100))*diffuse + vec3(0.1);
+
+	vec3 lightDir2 = normalize(vec3(-0.9, -0.4, 0.6));
+	vec3 diffuse2 = vec3(1.0, 1.0, 0.1)*max(vec3(0.0), dot(-lightDir2, cameraCast.normal))*0.8;
+	cool += vec3(worldShadow(cameraCast.position, -lightDir2, 200.0, 100))*diffuse2;
+
+	return cool;
+};
+
+vec3 render2(in vec3 ro, in vec3 rd)
+{
+	raymarchResult cameraCast = worldMarch(ro, rd, 200);
+	if(!cameraCast.hit) return vec3(0.0); // sky color
+	vec3 diffuse = cameraCast.material.diffuseColor;
+
+	vec3 lightDir = normalize(vec3(0.9, -1.0, 0.2));
+	diffuse = max(vec3(0.0), dot(-lightDir, cameraCast.normal))*0.5*vec3(0.4, 0.8, 1.0);
+	vec3 cool = vec3(worldShadow(cameraCast.position, -lightDir, 20.0, 100))*diffuse + vec3(0.1);
+
+	vec3 lightDir2 = normalize(vec3(-0.9, -0.4, 0.6));
+	vec3 diffuse2 = vec3(1.0, 1.0, 0.1)*max(vec3(0.0), dot(-lightDir2, cameraCast.normal))*0.8;
+	cool += vec3(worldShadow(cameraCast.position, -lightDir2, 200.0, 100))*diffuse2;
+
+	cool += render3(cameraCast.position + cameraCast.normal*0.01, reflect(rd, cameraCast.normal))*0.8*vec3(0.7, 0.9, 1.0);
+
+	return cool;
+};
+
+vec3 render(in vec3 ro, in vec3 rd)
+{
+	raymarchResult cameraCast = worldMarch(ro, rd, 200);
+	if(!cameraCast.hit) return vec3(0.0); // sky color
+	vec3 diffuse = cameraCast.material.diffuseColor;
+
+	vec3 lightDir = normalize(vec3(0.9, -1.0, 0.2));
+	diffuse = max(vec3(0.0), dot(-lightDir, cameraCast.normal))*0.5*vec3(0.4, 0.8, 1.0);
+	vec3 cool = vec3(worldShadow(cameraCast.position, -lightDir, 20.0, 200))*diffuse + vec3(0.1);
+
+	vec3 lightDir2 = normalize(vec3(-0.9, -0.4, 0.6));
+	vec3 diffuse2 = vec3(1.0, 1.0, 0.1)*max(vec3(0.0), dot(-lightDir2, cameraCast.normal))*0.8;
+	cool += vec3(worldShadow(cameraCast.position, -lightDir2, 200.0, 200))*diffuse2;
+
+	cool += render2(cameraCast.position + cameraCast.normal*0.01, reflect(rd, cameraCast.normal))*0.8*vec3(0.7, 0.9, 1.0)*(1.0-dot(cameraCast.normal, normalize(ro - cameraCast.position)));
+
+	return cool;
+};
+
 Camera getCam()
 {
 	Camera cam;
-	vec3 lookAt = vec3(0, 12, 0);
+	vec3 lookAt = vec3(0, -12, 0);
 
-	cam.position = vec3(cos(TIME)*10.0,15+ 3.0, sin(TIME)*10.0);
+	cam.position = vec3(cos(TIME*0.1)*100.0,15+ 3.0, sin(TIME*0.1)*100.0);
 
 	// figure out camera space from position and lookAt
 	cam.up = vec3(0, 1, 0);
@@ -181,16 +277,5 @@ Camera getCam()
 void main(void) {
 	Camera cam1 = getCam();
 
-	vec3 poos = cam1.rayDir;
-	raymarchResult testMarch = worldMarch(cam1.position, cam1.rayDir);
-	vec3 norm = calcWorldNormal(testMarch.position);
-
-	color += vec4(testMarch.diffuse_color*max(0, dot(norm, normalize(vec3(1.0, 1.0, 0.0))))*vec3(1.0, 1.0, 1.0), 1.0);
-	color += vec4(testMarch.diffuse_color*max(0, dot(norm, normalize(vec3(0.1, -1.0, 0.2))))*vec3(0.3, 0.3, 0.5), 0.0);
-	color += vec4(testMarch.diffuse_color*max(0, dot(norm, normalize(vec3(-0.9, 1.0, 0.2))))*vec3(vec3(abs(sin(TIME)), abs(sin(TIME+1)), abs(sin(TIME+2)))), 0.0);
-	vec3 ldir = normalize(vec3(1, -1, 1));
-	vec3 reflected = reflect(-ldir, norm);
-	float spec = pow(max(0.0, dot(reflected, cam1.rayDir)), 200.0);
-	color.xyz += vec3(spec)*testMarch.diffuse_color;
-	//color = vec4(testMarch.diffuse_color, 1.0);
+	color = vec4(render(cam1.position, cam1.rayDir), 1.0);
 }
