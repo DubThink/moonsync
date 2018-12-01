@@ -140,6 +140,7 @@ call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\config.h" />
+    <ClInclude Include="src\debug_camera.h" />
     <ClInclude Include="src\debug_help.h" />
     <ClInclude Include="src\ext.h" />
     <ClInclude Include="src\fp.h" />
@@ -149,6 +150,7 @@ call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     <ClInclude Include="src\system.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\debug_camera.cpp" />
     <ClCompile Include="src\debug_help.cpp" />
     <ClCompile Include="src\ext.cpp" />
     <ClCompile Include="src\intro.cpp" />

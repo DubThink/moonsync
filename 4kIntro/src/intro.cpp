@@ -12,6 +12,7 @@
 #include "post_processing_shader.inl"
 #include "fp.h"
 #include "debug_help.h"
+#include "debug_camera.h"
 
 //remove
 #include <direct.h>
@@ -185,6 +186,7 @@ void reloadPostShader(){
 }
 long last_load = 0; // last shader load
 #endif
+DebugCamera cam;
 
 void intro_do(long time)
 {
@@ -202,8 +204,23 @@ void intro_do(long time)
 		//MessageBox(0, "Shaders Loaded", "Shaders Loaded", MB_OK | MB_ICONINFORMATION);
 	}
 #endif
+
+	// -------------- CAMERA CONTROL
+	if (hWnd == GetForegroundWindow()) {
+		cam.speed = GetAsyncKeyState(VK_SHIFT) ? 1.0 : 0.1;
+		if (GetAsyncKeyState('W'))cam.moveForward(1);
+		if (GetAsyncKeyState('S'))cam.moveForward(-1);
+		if (GetAsyncKeyState('A'))cam.moveRight(-1);
+		if (GetAsyncKeyState('D'))cam.moveRight(1);
+		if (GetAsyncKeyState(VK_LEFT))cam.lookRight(-1);
+		if (GetAsyncKeyState(VK_RIGHT))cam.lookRight(1);
+		if (GetAsyncKeyState(VK_DOWN))cam.lookUp(-1);
+		if (GetAsyncKeyState(VK_UP))cam.lookUp(1);
+	}
+
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 	glBindProgramPipeline(renderingPipeline);
+
 	// Set fparams to give input to shaders
 	/*
 	fparams[0][0] = time in seconds
@@ -213,7 +230,14 @@ void intro_do(long time)
 	fparams[2].xyz = look dir
 	*/
 	fparams[0] = time / 1000.0f;
-
+	Vec3 camPos = cam.getPosition();
+	Vec3 camLook = cam.getLookAt();
+	fparams[4] = (float)camPos.x;
+	fparams[5] = (float)camPos.y;
+	fparams[6] = (float)camPos.z;
+	fparams[8] = (float)camLook.x;
+	fparams[9] = (float)camLook.y;
+	fparams[10] = (float)camLook.z;
 	// Render
 	glProgramUniform4fv(fragmentShader, 0, 4, fparams);
 	glRects(-1, -1, 1, 1); // Deprecated. Still seems to work though.
