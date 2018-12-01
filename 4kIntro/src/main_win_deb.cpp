@@ -51,7 +51,7 @@ void  InitSound()
 
 	dsInit(player.RenderProxy, &player, GetForegroundWindow());
 
-	player.Play();
+	//player.Play();
 }
 
 

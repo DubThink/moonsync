@@ -7,6 +7,7 @@ private:
 	float yRot = 0.0;
 	Vec3 pos{};
 public:
+	float frameTime = 1 / 60.f;
 	float speed = 0.1;
 	Vec3 getPosition();
 	Vec3 getLookDirection();

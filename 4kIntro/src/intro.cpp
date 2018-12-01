@@ -187,6 +187,10 @@ void reloadPostShader(){
 long last_load = 0; // last shader load
 #endif
 DebugCamera cam;
+long last_time=-1;
+float frameTime = 0;
+bool captureMouse = false;
+bool lastCaptureKey = false;
 
 void intro_do(long time)
 {
@@ -204,10 +208,17 @@ void intro_do(long time)
 		//MessageBox(0, "Shaders Loaded", "Shaders Loaded", MB_OK | MB_ICONINFORMATION);
 	}
 #endif
+	if (last_time > 0)
+		frameTime = time - last_time;
+	last_time = time;
 
+	captureMouse = GetAsyncKeyState(VK_TAB);
+
+	
 	// -------------- CAMERA CONTROL
-	//if (hWnd == GetForegroundWindow()) {
-		cam.speed = GetAsyncKeyState(VK_SHIFT) ? 1.0 : 0.1;
+	if (hWnd == GetForegroundWindow()) {
+		cam.speed = (GetAsyncKeyState(VK_SHIFT) ? 1.0 : 0.1);
+		cam.frameTime=frameTime/20.0;
 		if (GetAsyncKeyState('W'))cam.moveForward(1);
 		if (GetAsyncKeyState('S'))cam.moveForward(-1);
 		if (GetAsyncKeyState('A'))cam.moveRight(-1);
@@ -216,7 +227,24 @@ void intro_do(long time)
 		if (GetAsyncKeyState(VK_RIGHT))cam.lookRight(1);
 		if (GetAsyncKeyState(VK_DOWN))cam.lookUp(-1);
 		if (GetAsyncKeyState(VK_UP))cam.lookUp(1);
-	//}
+
+		POINT screenMouse;
+		GetCursorPos(&screenMouse);
+		POINT windowMouse(screenMouse);
+		POINT delta;
+
+
+		if (ScreenToClient(hWnd, &windowMouse))
+		{
+			//p.x and p.y are now relative to hwnd's client area
+			delta.x = windowMouse.x - XRES / 2;
+			delta.y = windowMouse.y - YRES / 2;
+			SetCursorPos(screenMouse.x - delta.x, screenMouse.y - delta.y);
+			cam.lookRight(delta.x*MOUSE_SENSE);
+			cam.lookUp(-delta.y*MOUSE_SENSE);
+			ShowCursor(FALSE);
+		}
+	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 	glBindProgramPipeline(renderingPipeline);
@@ -231,7 +259,7 @@ void intro_do(long time)
 	*/
 	fparams[0] = time / 1000.0f;
 	Vec3 camPos = cam.getPosition();
-	Vec3 camLook = cam.getLookAt();
+	Vec3 camLook = cam.getLookDirection();
 	fparams[4] = (float)camPos.x;
 	fparams[5] = (float)camPos.y;
 	fparams[6] = (float)camPos.z;
