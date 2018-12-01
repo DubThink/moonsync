@@ -1,6 +1,5 @@
 #ifndef _DEBUGCAMERA_H_
 #define _DEBUGCAMERA_H_
-#ifdef DEBUG
 #include "vec3.h"
 class DebugCamera {
 private:
@@ -18,5 +17,4 @@ public:
 	void lookRight(float amt);
 	void lookUp(float amt);
 };
-#endif // DEBUG
 #endif // header guard

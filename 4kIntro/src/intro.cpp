@@ -206,7 +206,7 @@ void intro_do(long time)
 #endif
 
 	// -------------- CAMERA CONTROL
-	if (hWnd == GetForegroundWindow()) {
+	//if (hWnd == GetForegroundWindow()) {
 		cam.speed = GetAsyncKeyState(VK_SHIFT) ? 1.0 : 0.1;
 		if (GetAsyncKeyState('W'))cam.moveForward(1);
 		if (GetAsyncKeyState('S'))cam.moveForward(-1);
@@ -216,7 +216,7 @@ void intro_do(long time)
 		if (GetAsyncKeyState(VK_RIGHT))cam.lookRight(1);
 		if (GetAsyncKeyState(VK_DOWN))cam.lookUp(-1);
 		if (GetAsyncKeyState(VK_UP))cam.lookUp(1);
-	}
+	//}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 	glBindProgramPipeline(renderingPipeline);

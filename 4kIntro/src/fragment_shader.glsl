@@ -165,7 +165,7 @@ raymarchResult worldMarch(in vec3 ro, in vec3 rd, const int MAX_STEPS) {
 }
 
 float worldShadow(in vec3 ro, in vec3 rd, float hardness, const int MAX_STEPS) {
-	
+
 	ro += rd*MIN_HIT_DIST*30.0; // Increasing the factor here decreases the chance of banding, but makes less accurate shadows.
 
 	float light = 1.0;
@@ -209,7 +209,7 @@ vec3 render3(in vec3 ro, in vec3 rd)
 	cool += vec3(worldShadow(cameraCast.position, -lightDir2, 200.0, 100))*diffuse2;
 
 	return cool;
-};
+}
 
 vec3 render2(in vec3 ro, in vec3 rd)
 {
@@ -228,7 +228,7 @@ vec3 render2(in vec3 ro, in vec3 rd)
 	cool += render3(cameraCast.position + cameraCast.normal*0.01, reflect(rd, cameraCast.normal))*0.8*vec3(0.7, 0.9, 1.0);
 
 	return cool;
-};
+}
 
 vec3 render(in vec3 ro, in vec3 rd)
 {
@@ -247,7 +247,7 @@ vec3 render(in vec3 ro, in vec3 rd)
 	cool += render2(cameraCast.position + cameraCast.normal*0.01, reflect(rd, cameraCast.normal))*0.8*vec3(0.7, 0.9, 1.0)*(1.0-dot(cameraCast.normal, normalize(ro - cameraCast.position)));
 
 	return cool;
-};
+}
 
 Camera getCam()
 {

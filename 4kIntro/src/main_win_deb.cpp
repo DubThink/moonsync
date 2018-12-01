@@ -11,6 +11,8 @@
 #include "intro.h"
 #include "4klang.h"
 #include "config.h"
+#include "v2mplayer.h"
+#include "libv2.h"
 
 //==============================================================================================
 
@@ -28,54 +30,28 @@ typedef struct
     //---------------
 }WININFO;
 
-// MAX_SAMPLES gives you the number of samples for the whole song. we always produce stereo samples, so times 2 for the buffer
-SAMPLE_TYPE	lpSoundBuffer[MAX_SAMPLES * 2];
-HWAVEOUT	hWaveOut;
+// v2 synth code
 
-WAVEFORMATEX WaveFMT =
-{
-#ifdef FLOAT_32BIT	
-	WAVE_FORMAT_IEEE_FLOAT,
-#else
-	WAVE_FORMAT_PCM,
-#endif		
-	2, // channels
-	SAMPLE_RATE, // samples per sec
-	SAMPLE_RATE * sizeof(SAMPLE_TYPE) * 2, // bytes per sec
-	sizeof(SAMPLE_TYPE) * 2, // block alignment;
-	sizeof(SAMPLE_TYPE) * 8, // bits per sample
-	0 // extension not needed
-};
+static V2MPlayer player;
+extern "C" const sU8 theTune[];
 
-WAVEHDR WaveHDR =
-{
-	(LPSTR)lpSoundBuffer,
-	MAX_SAMPLES * sizeof(SAMPLE_TYPE) * 2,			// MAX_SAMPLES*sizeof(float)*2(stereo)
-	0,
-	0,
-	0,
-	0,
-	0,
-	0
-};
 
-MMTIME MMTime =
+void print(const char *bla)
 {
-	TIME_SAMPLES,
-	0
-};
+	unsigned long bw;
+	int len = -1;
+	while (bla[++len]);
+	WriteFile(stdout, bla, len, &bw, 0);
+}
 
 void  InitSound()
 {
-#ifdef USE_SOUND_THREAD
-	// thx to xTr1m/blu-flame for providing a smarter and smaller way to create the thread :)
-	CreateThread(0, 0, (LPTHREAD_START_ROUTINE)_4klang_render, lpSoundBuffer, 0, 0);
-#else
-	_4klang_render(lpSoundBuffer);
-#endif
-	waveOutOpen(&hWaveOut, WAVE_MAPPER, &WaveFMT, NULL, 0, CALLBACK_NULL);
-	waveOutPrepareHeader(hWaveOut, &WaveHDR, sizeof(WaveHDR));
-	waveOutWrite(hWaveOut, &WaveHDR, sizeof(WaveHDR));
+	player.Init();
+	player.Open(theTune);
+
+	dsInit(player.RenderProxy, &player, GetForegroundWindow());
+
+	player.Play();
 }
 
 
@@ -266,43 +242,27 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 #endif
 
     long to = timeGetTime();
-    while( !done )
-    {
+	while (!done)
+	{
 		long t = timeGetTime() - to;
 #ifndef SOUND_DISABLED
-		waveOutGetPosition(hWaveOut, &MMTime, sizeof(MMTIME));
 #endif
-        while(PeekMessage(&msg, 0, 0, 0, PM_REMOVE) )
-        {
-            if( msg.message==WM_QUIT ) done=1;
-		    TranslateMessage( &msg );
+		while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+		{
+			if (msg.message == WM_QUIT) done = 1;
+			TranslateMessage(&msg);
 
-            DispatchMessage( &msg );
-        }
-
-        intro_do(t);
-
-        SwapBuffers( info->hDC );
-        Sleep( 1 ); // give other processes some chance to do something
-
-		if (MMTime.u.sample >= MAX_SAMPLES) {
-#ifdef DEBUG
-			// if we would end at the end of music, check if we should
-			if (musicEnd)
-				musicEnd = MessageBox(0, "Music ended. Continue running?", "Continue?", MB_YESNO | MB_ICONEXCLAMATION) != IDYES;
-			// if we would end at the end of music, do
-			if (musicEnd)
-				done=1;
+			DispatchMessage(&msg);
 		}
-#else
-			done = 1;
-		}
-#endif
-    }
 
-    sndPlaySound( 0, 0 );
+		intro_do(t);
+
+		SwapBuffers(info->hDC);
+		Sleep(1); // give other processes some chance to do something
+	}
     window_end( info );
-
+	dsClose();
+	player.Close();
     return( 0 );
 }
 

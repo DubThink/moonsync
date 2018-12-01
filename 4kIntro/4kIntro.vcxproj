@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -72,6 +72,7 @@
       <SubSystem>Windows</SubSystem>
       <DataExecutionPrevention />
       <TargetMachine>MachineX86</TargetMachine>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <Bscmake />
     <PreBuildEvent>
@@ -80,7 +81,6 @@ call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/fragment_shader.glsl"
 call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/post_processing_shader.glsl"
 
 ECHO Minimizing fragment shader...
-call "$(SolutionDir)minify_shaders.bat" "$(SolutionDir)"
 ECHO Building 4klang...
 call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     </PreBuildEvent>
@@ -133,7 +133,6 @@ call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/fragment_shader.glsl"
 call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/post_processing_shader.glsl"
 
 ECHO Minimizing fragment shader...
-call "$(SolutionDir)minify_shaders.bat" "$(SolutionDir)"
 ECHO Building 4klang...
 call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     </PreBuildEvent>
@@ -147,7 +146,9 @@ call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     <ClInclude Include="src\glext.h" />
     <ClInclude Include="src\4klang.h" />
     <ClInclude Include="src\intro.h" />
+    <ClInclude Include="src\libv2.h" />
     <ClInclude Include="src\system.h" />
+    <ClInclude Include="src\v2mplayer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\debug_camera.cpp" />
@@ -160,6 +161,7 @@ call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     <ClCompile Include="src\main_win_rel.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="src\v2mplayer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\4klang.inc" />
@@ -173,6 +175,10 @@ call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
   </ItemGroup>
   <ItemGroup>
     <Object Include="src\4klang.obj" />
+    <Object Include="src\tune.obj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="src\libv2.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
