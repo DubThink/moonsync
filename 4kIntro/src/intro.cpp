@@ -2,6 +2,7 @@
 #define WIN32_EXTRA_LEAN
 #include <windows.h>
 #include <GL/gl.h>
+#include <GL/GLU.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +11,7 @@
 #include "vertex_shader.inl"
 #include "fragment_shader.inl"
 #include "post_processing_shader.inl"
+#include "physics_shader.inl"
 #include "fp.h"
 #include "debug_help.h"
 #include "debug_camera.h"
@@ -24,7 +26,21 @@ static GLuint texture;
 static GLuint depthTexture;
 static GLuint renderingPipeline;
 static GLuint postProcessingPipeline;
+static GLuint physicsPipeline;
+GLuint physicsShader;
+GLuint physicsBuffer;
 GLuint postProcessingShader;
+
+// physics?
+#define NUM_PARTICLES 1024*1024 // total number of particles to move
+#define WORK_GROUP_SIZE 128 // # work-items per work-group
+
+struct shader_data_t
+{
+	float camera_position[4];
+	float light_position[4];
+	float light_diffuse[4];
+} shader_data;
 
 static float fparams[4 * 4];
 
@@ -38,10 +54,11 @@ int  intro_init(void){
 
 	if (!EXT_Init())
 		return 0;
-
+	GLenum err;
 	GLuint vertexShader = glCreateShaderProgramv(GL_VERTEX_SHADER, 1, &vertex_shader_glsl);
 	fragmentShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &fragment_shader_glsl_pr);
 	postProcessingShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &post_processing_shader_glsl_pr);
+	physicsShader = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &physics_shader_glsl_pr);
 
 	glGenProgramPipelines(1, &renderingPipeline);
 	glBindProgramPipeline(renderingPipeline);
@@ -55,6 +72,20 @@ int  intro_init(void){
 	glUseProgramStages(postProcessingPipeline, GL_VERTEX_SHADER_BIT, vertexShader);
 	glUseProgramStages(postProcessingPipeline, GL_FRAGMENT_SHADER_BIT, postProcessingShader);
 
+	//glGenProgramPipelines(1, &physicsPipeline);
+	//glBindProgramPipeline(physicsPipeline);
+	//glUseProgramStages(physicsPipeline, GL_COMPUTE_SHADER_BIT, physicsShader);
+
+	//while ((err = glGetError()) != GL_NO_ERROR)
+	//{
+	//	MessageBox(0, 0, "Error Vert!", MB_OK | MB_ICONEXCLAMATION);
+	//}
+	
+	glGenBuffers(1, &physicsBuffer);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, physicsBuffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(shader_data), &shader_data, GL_DYNAMIC_COPY);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
 #ifdef DEBUG
 	int result;
 	char info[1536];
@@ -64,18 +95,19 @@ int  intro_init(void){
 		MessageBox(0, info, "Error Vert!", MB_OK | MB_ICONEXCLAMATION);
 	}
 	glGetProgramiv(fragmentShader, GL_LINK_STATUS, &result);
-	glGetShaderInfoLog(fragmentShader, 1024, NULL, (char *)info);
-	if (!result) {
-		MessageBox(0, info, "Frag Error! (1)", MB_OK | MB_ICONEXCLAMATION);
-	}
 	glGetProgramInfoLog(fragmentShader, 1024, NULL, (char *)info);
 	if (!result) {
-		MessageBox(0, info, "Frag Error! (2)", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(0, info, "Frag Error!", MB_OK | MB_ICONEXCLAMATION);
 	}
 	glGetProgramiv(postProcessingShader, GL_LINK_STATUS, &result);
 	glGetProgramInfoLog(postProcessingShader, 1024, NULL, (char *)info);
 	if (!result) {
 		MessageBox(0, info, "Error Post!", MB_OK | MB_ICONEXCLAMATION);
+	}
+	glGetProgramiv(physicsShader, GL_LINK_STATUS, &result);
+	glGetProgramInfoLog(physicsShader, 1024, NULL, (char *)info);
+	if (!result) {
+		MessageBox(0, info, "Error Physics!", MB_OK | MB_ICONEXCLAMATION);
 	}
 #endif
 
@@ -218,6 +250,7 @@ void intro_do(long time)
 		if (GetAsyncKeyState(VK_UP))cam.lookUp(1);
 	//}
 
+	// Set fparams to give input to shaders
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 	glBindProgramPipeline(renderingPipeline);
 
@@ -238,9 +271,28 @@ void intro_do(long time)
 	fparams[8] = (float)camLook.x;
 	fparams[9] = (float)camLook.y;
 	fparams[10] = (float)camLook.z;
+
+	shader_data.camera_position[0] = camPos.x;
+	shader_data.camera_position[1] = camPos.y;
+	shader_data.camera_position[2] = camPos.z;
+	// update ssbo
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, physicsBuffer);
+	GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
+	//memcpy(p, &shader_data, sizeof(shader_data))
+	memcpy(p, &shader_data, sizeof(shader_data));
+	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
 	// Render
 	glProgramUniform4fv(fragmentShader, 0, 4, fparams);
 	glRects(-1, -1, 1, 1); // Deprecated. Still seems to work though.
+
+	// Physics
+	//glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	glBindProgramPipeline(physicsPipeline);
+
+	//glBindTexture(GL_TEXTURE_2D, texture);
+	//glRects(-1, -1, 1, 1);
+
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindProgramPipeline(postProcessingPipeline);

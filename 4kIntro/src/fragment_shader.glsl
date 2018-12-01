@@ -52,6 +52,13 @@ struct raymarchResult
 	Material material;
 };
 
+layout (std430, binding=2) buffer shader_data
+{
+  vec4 camera_position;
+  vec4 light_position;
+  vec4 light_diffuse;
+};
+
 // ----------------------------------------------------- //
 // SDF functions
 // ----------------------------------------------------- //
@@ -254,6 +261,7 @@ Camera getCam()
 	Camera cam;
 	vec3 lookAt = vec3(0, -12, 0);
 
+	//cam.position = shader_data.camera_position.xyz;//vec3(cos(TIME*0.1)*100.0,15+ 3.0, sin(TIME*0.1)*100.0);
 	cam.position = vec3(cos(TIME*0.1)*100.0,15+ 3.0, sin(TIME*0.1)*100.0);
 
 	// figure out camera space from position and lookAt

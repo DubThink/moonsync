@@ -165,6 +165,7 @@ call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\4klang.inc" />
+    <None Include="src\physics_shader.inl" />
     <None Include="src\post_processing_shader.glsl" />
     <None Include="src\fragment_shader.glsl">
       <FileType>Text</FileType>

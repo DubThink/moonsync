@@ -11,30 +11,41 @@
 
 
 #ifdef DEBUG
-#define NUMFUNCTIONS 13
+#define NUMFUNCTIONS 21
 #else
-#define NUMFUNCTIONS 10
+#define NUMFUNCTIONS 18
 #endif
 
 extern void *myglfunc[NUMFUNCTIONS];
 
 
-#define glCreateShaderProgramv         ((PFNGLCREATESHADERPROGRAMVPROC)myglfunc[0])
-#define glGenProgramPipelines          ((PFNGLGENPROGRAMPIPELINESPROC)myglfunc[1])
-#define glBindProgramPipeline          ((PFNGLBINDPROGRAMPIPELINEPROC)myglfunc[2])
-#define glUseProgramStages             ((PFNGLUSEPROGRAMSTAGESPROC)myglfunc[3])
-#define glProgramUniform4fv            ((PFNGLPROGRAMUNIFORM4FVPROC)myglfunc[4])
-#define glGenFramebuffers              ((PFNGLGENFRAMEBUFFERSPROC)myglfunc[5])
-#define glBindFramebuffer              ((PFNGLBINDFRAMEBUFFERPROC)myglfunc[6])
-#define glTexStorage2D                 ((PFNGLTEXSTORAGE2DPROC)myglfunc[7])
-#define glDrawBuffers                  ((PFNGLDRAWBUFFERSPROC)myglfunc[8])
-#define glFramebufferTexture           ((PFNGLFRAMEBUFFERTEXTUREPROC)myglfunc[9])
+
+
+
+#define glCreateShaderProgramv			((PFNGLCREATESHADERPROGRAMVPROC)myglfunc[0])
+#define glGenProgramPipelines			((PFNGLGENPROGRAMPIPELINESPROC)myglfunc[1])
+#define glBindProgramPipeline			((PFNGLBINDPROGRAMPIPELINEPROC)myglfunc[2])
+#define glUseProgramStages				((PFNGLUSEPROGRAMSTAGESPROC)myglfunc[3])
+#define glProgramUniform4fv				((PFNGLPROGRAMUNIFORM4FVPROC)myglfunc[4])
+#define glGenFramebuffers				((PFNGLGENFRAMEBUFFERSPROC)myglfunc[5])
+#define glBindFramebuffer				((PFNGLBINDFRAMEBUFFERPROC)myglfunc[6])
+#define glTexStorage2D					((PFNGLTEXSTORAGE2DPROC)myglfunc[7])
+#define glDrawBuffers					((PFNGLDRAWBUFFERSPROC)myglfunc[8])
+#define glFramebufferTexture			((PFNGLFRAMEBUFFERTEXTUREPROC)myglfunc[9])
+#define glDispatchCompute				((PFNGLDISPATCHCOMPUTEPROC)myglfunc[10])
+#define glGenBuffers					((PFNGLGENBUFFERSPROC)myglfunc[11])
+#define glBufferData					((PFNGLBUFFERDATAPROC)myglfunc[12])
+#define glBindBuffer					((PFNGLBINDBUFFERPROC)myglfunc[13])
+#define glMapBufferRange				((PFNGLMAPBUFFERRANGEPROC)myglfunc[13])
+#define glUnmapBuffer					((PFNGLUNMAPBUFFERPROC)myglfunc[13])
+#define glBindBufferBase				((PFNGLBINDBUFFERBASEPROC)myglfunc[13])
+#define glMapBuffer						((PFNGLMAPBUFFERPROC)myglfunc[13])
 
 
 #ifdef DEBUG
-#define glGetProgramiv          ((PFNGLGETPROGRAMIVPROC)myglfunc[10])
-#define glGetProgramInfoLog     ((PFNGLGETPROGRAMINFOLOGPROC)myglfunc[11])
-#define glGetShaderInfoLog         ((PFNGLGETSHADERINFOLOGPROC)myglfunc[12])
+#define glGetProgramiv          ((PFNGLGETPROGRAMIVPROC)myglfunc[14])
+#define glGetProgramInfoLog     ((PFNGLGETPROGRAMINFOLOGPROC)myglfunc[15])
+#define glGetShaderInfoLog         ((PFNGLGETSHADERINFOLOGPROC)myglfunc[16])
 #endif
 
 // init
