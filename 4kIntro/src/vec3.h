@@ -3,6 +3,7 @@
 /**
 * A barebones header-only 3-vector for demos
 * @author Benjamin Welsh
+* broog.
 */
 struct Vec3 {
 	double x, y, z;

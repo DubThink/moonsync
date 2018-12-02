@@ -13,6 +13,7 @@
 #include "fp.h"
 #include "debug_help.h"
 #include "debug_camera.h"
+#include "vec3.h"
 
 //remove
 #include <direct.h>
@@ -27,6 +28,17 @@ static GLuint postProcessingPipeline;
 GLuint postProcessingShader;
 
 static float fparams[4 * 4];
+
+#define NR_LIGHTS 16
+struct Light {
+	Vec3 position;
+	Vec3 color;
+	float radius;
+	float PLACEHOLDER;
+};
+GLint mylightbuffer;
+Light lights[NR_LIGHTS];
+
 
 HWND hWnd;
 int  intro_init(HWND h){
@@ -95,6 +107,14 @@ int  intro_init(HWND h){
 
 	fparams[1] = XRES;
 	fparams[2] = YRES;
+
+	// allocate memory for light buffer
+	glBindBuffer(GL_UNIFORM_BUFFER, mylightbuffer);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(Light) * NR_LIGHTS, NULL, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	// bind light buffer to location 1
+	glBindBufferBase(GL_UNIFORM_BUFFER, 1, mylightbuffer);
 
 	return 1;
 }
@@ -264,6 +284,16 @@ void intro_do(long time)
 	fparams[8] = (float)camLook.x;
 	fparams[9] = (float)camLook.y;
 	fparams[10] = (float)camLook.z;
+
+	for (int i = 0; i < NR_LIGHTS; i++)
+	{
+		lights[i].position = Vec3{ (double)i, (double)i * 2, (double)i * 3 };
+	}
+
+	glBindBuffer(GL_UNIFORM_BUFFER, mylightbuffer);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(lights), lights);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 	// Render
 	glProgramUniform4fv(fragmentShader, 0, 4, fparams);
 	glRects(-1, -1, 1, 1); // Deprecated. Still seems to work though.

@@ -28,11 +28,44 @@ struct Light{
 #define NR_LIGHTS 16
 layout (std140, binding = 1) uniform LightBlock {
     Light lights[NR_LIGHTS];
-};
+}lightBlock;
 
 vec2 resolution = vec2(fpar[0].y, fpar[0].z); // TODO: get this as a uniform
 
 #define TIME fpar[0].x
+
+// ----------------------------------------------------- //
+// Structs and stuff
+// ----------------------------------------------------- //
+
+struct Camera
+{
+	vec3 position;
+
+	// Camera space stuff
+	vec3 forwards;
+	vec3 left; // remove left/up to save space in future
+	vec3 up;
+
+	vec3 rayDir;
+};
+
+struct Material {
+	vec3 diffuseColor;
+	float specular;
+	float shininess;
+};
+
+struct raymarchResult
+{
+	vec3 position;
+	vec3 normal;
+	bool hit;
+	Material material;
+};
+
+
+Light sun = Light(vec3(-0.3, -0.8, 0.2),vec3(1.0,1.0,0.9),-1,0);
 
 //	Classic Perlin 3D Noise
 //	by Stefan Gustavson
@@ -108,43 +141,6 @@ float cnoise(vec3 P){
   float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
   return 2.2 * n_xyz;
 }
-
-// ----------------------------------------------------- //
-// Structs and stuff
-// ----------------------------------------------------- //
-
-struct Camera
-{
-	vec3 position;
-
-	// Camera space stuff
-	vec3 forwards;
-	vec3 left; // remove left/up to save space in future
-	vec3 up;
-
-	vec3 rayDir;
-};
-
-struct Material {
-	vec3 diffuseColor;
-	float specular;
-	float shininess;
-};
-
-struct raymarchResult
-{
-	vec3 position;
-	vec3 normal;
-	bool hit;
-	Material material;
-};
-
-
-Light sun = Light(vec3(-0.3, -0.8, 0.2),vec3(1.0,1.0,0.9));
-
-vec3 light1dir=vec3(0.6, -1.0, -0.2);
-vec3 light2dir=vec3(-0.2, -0.8, 0.2);
-
 
 
 // ----------------------------------------------------- //
@@ -263,7 +259,7 @@ float worldSDF1(in vec3 v)
 	vec3 q,r;
 
 	// enemy
-	float playerModel = sdEnemy(v,vec3(0,16,10));
+	float playerModel = sdEnemy(v,vec3(0,16,0));
 
 	float box1 = sdBox(v, vec3(36.0, 22.0, 16.0));
 	float box2 = sdBox(v, vec3(34.5, 35.0, 14.5));
@@ -307,10 +303,20 @@ float worldSDF1(in vec3 v)
 	return sdf_agg;
 }
 
+// stuff that doesn't cast shadows (i.e. lights)
+float worldSDF3(in vec3 v){
+	float sdf_agg = 1000.0;
+	sdf_agg=min(sdf_agg,sphereSDF(v,lightBlock.lights[1].position,.5));
+	// for(int i=0;i<NR_LIGHTS;i++){
+	// 	sdf_agg=min(sdf_agg,sphereSDF(v,LightBlock[i],.5));
+	// }
+	return sdf_agg;
+}
+
 float worldSDF(in vec3 v)
 {
 
-	return min(worldSDF1(v),worldSDF2(v));
+	return min(worldSDF1(v),min(worldSDF2(v),worldSDF3(v)));
 }
 // ----------------------------------------------------- //
 // Lights
@@ -405,6 +411,7 @@ vec3 skyColor(in vec3 v){
 	float cloud=max(0,cnoise(v*vec3(2,6,2)+vec3(TIME*0.1)) + cnoise(5*v*vec3(2,6,2)+vec3(TIME*0.1))*0.2);
 	return mix( vec3(.4,.5,1.),vec3(.5,.5,1.),factor)+cloud*factor;
 }
+
 vec3 render2(in vec3 ro, in vec3 rd)
 {
 	raymarchResult cameraCast = worldMarch(ro, rd, 100);
@@ -413,7 +420,7 @@ vec3 render2(in vec3 ro, in vec3 rd)
 	vec3 cool;
 
 	vec3 sunAlbedo = sun.color*max(vec3(0.0), dot(-normalize(sun.position), cameraCast.normal));
-	sunAlbedo*( (sin(cameraCast.position.x)+sin(cameraCast.position.x)+sin(cameraCast.position.x))*0.2 + 0.8);
+	// sunAlbedo*( (sin(cameraCast.position.x)+sin(cameraCast.position.x)+sin(cameraCast.position.x))*0.2 + 0.8);
 	cool += vec3(worldShadow(cameraCast.position, -sun.position, 200.0, 200))*sunAlbedo;
 
 	return cool;
@@ -434,7 +441,7 @@ vec3 render(in vec3 ro, in vec3 rd)
 	// vec3 cool = vec3(worldShadow(cameraCast.position, -lightDir, 60.0, 100))*diffuse*0.4 + vec3(0.);
 
 	vec3 sunAlbedo = sun.color*max(vec3(0.0), dot(-normalize(sun.position), cameraCast.normal));
-	sunAlbedo*( (sin(cameraCast.position.x)+sin(cameraCast.position.x)+sin(cameraCast.position.x))*0.2 + 0.8);
+	// sunAlbedo=*( (sin(cameraCast.position.x)+sin(cameraCast.position.x)+sin(cameraCast.position.x))*0.2 + 0.8);
 	cool += vec3(worldShadow(cameraCast.position, -sun.position, 200.0, 200))*sunAlbedo;
 
 	if(cameraCast.material.shininess>0.5){

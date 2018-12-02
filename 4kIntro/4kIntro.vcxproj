@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="DebugKK|Win32">
@@ -100,6 +100,7 @@ call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/fragment_shader.glsl"
 call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/post_processing_shader.glsl"
 
 ECHO Minimizing fragment shader...
+call "$(SolutionDir)minify_shaders.bat"
 ECHO Building 4klang...
 call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     </PreBuildEvent>
@@ -155,6 +156,7 @@ call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/fragment_shader.glsl"
 call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/post_processing_shader.glsl"
 
 ECHO Minimizing fragment shader...
+call "$(SolutionDir)minify_shaders.bat"
 ECHO Building 4klang...
 call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     </PreBuildEvent>
@@ -207,6 +209,7 @@ call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/fragment_shader.glsl"
 call "$(ProjectDir)src\preprocessor.py" "$(ProjectDir)src/post_processing_shader.glsl"
 
 ECHO Minimizing fragment shader...
+call "$(SolutionDir)minify_shaders.bat"
 ECHO Building 4klang...
 call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     </PreBuildEvent>
@@ -223,6 +226,7 @@ call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     <ClInclude Include="src\libv2.h" />
     <ClInclude Include="src\system.h" />
     <ClInclude Include="src\v2mplayer.h" />
+    <ClInclude Include="src\vec3.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\debug_camera.cpp" />

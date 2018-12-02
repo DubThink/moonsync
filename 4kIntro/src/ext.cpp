@@ -22,6 +22,10 @@ static char *strs[] = {
 	"glTexStorage2D",
 	"glDrawBuffers",
 	"glFramebufferTexture",
+	"glBindBuffer",
+	"glBufferData",
+	"glBindBufferBase",
+	"glBufferSubData",
 
     #ifdef DEBUG
 	"glGetProgramiv",
