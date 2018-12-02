@@ -11,9 +11,9 @@
 
 
 #ifdef DEBUG
-#define NUMFUNCTIONS 17
+#define NUMFUNCTIONS 20
 #else
-#define NUMFUNCTIONS 14
+#define NUMFUNCTIONS 18
 #endif
 
 extern void *myglfunc[NUMFUNCTIONS];
@@ -31,14 +31,17 @@ extern void *myglfunc[NUMFUNCTIONS];
 #define glFramebufferTexture           ((PFNGLFRAMEBUFFERTEXTUREPROC)myglfunc[9])
 #define glBindBuffer				   ((PFNGLBINDBUFFERPROC)myglfunc[10])
 #define glBufferData				   ((PFNGLBUFFERDATAPROC)myglfunc[11])
-#define glBindBufferBase			   ((PFNGLBINDBUFFERBASEPROC)myglfunc[12])
+#define glBindBufferRange			   ((PFNGLBINDBUFFERRANGEPROC)myglfunc[12])
 #define glBufferSubData				   ((PFNGLBUFFERSUBDATAPROC)myglfunc[13])
+#define glGenBuffers				   ((PFNGLGENBUFFERSPROC)myglfunc[14])
+#define glUniformBlockBinding		   ((PFNGLUNIFORMBLOCKBINDINGPROC)myglfunc[15])
+#define glBufferSubData3			   ((PFNGLBUFFERSUBDATAPROC)myglfunc[16])
+#define glBufferSubData4			   ((PFNGLBUFFERSUBDATAPROC)myglfunc[17])
 
 
 #ifdef DEBUG
-#define glGetProgramiv          ((PFNGLGETPROGRAMIVPROC)myglfunc[14])
-#define glGetProgramInfoLog     ((PFNGLGETPROGRAMINFOLOGPROC)myglfunc[15])
-#define glGetShaderInfoLog         ((PFNGLGETSHADERINFOLOGPROC)myglfunc[16])
+#define glGetProgramiv          ((PFNGLGETPROGRAMIVPROC)myglfunc[18])
+#define glGetProgramInfoLog     ((PFNGLGETPROGRAMINFOLOGPROC)myglfunc[19])
 #endif
 
 // init

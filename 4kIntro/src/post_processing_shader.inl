@@ -5,7 +5,7 @@
 # define POST_PROCESSING_SHADER_INL_
 
 const char *post_processing_shader_glsl_pr =
- "#version 430\n"
+ "#version 440\n"
  "#line 1 0\n"
  "layout(location=0)uniform vec4 fpar[4];"
  "layout(location=0)out vec4 color;"

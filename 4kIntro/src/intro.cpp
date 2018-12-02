@@ -30,15 +30,21 @@ GLuint postProcessingShader;
 static float fparams[4 * 4];
 
 #define NR_LIGHTS 16
+struct Vec4 { float x, y, z, w; };
 struct Light {
-	Vec3 position;
-	Vec3 color;
-	float radius;
-	float PLACEHOLDER;
+	Vec4 pos;
+	Vec4 color;
 };
-GLint mylightbuffer;
+GLuint mylightbuffer;
 Light lights[NR_LIGHTS];
 
+#define NR_BALLS 16
+struct Ball {
+	Vec4 pos;
+	Vec4 vel;
+};
+GLuint myballbuffer;
+Light myballs[NR_BALLS];
 
 HWND hWnd;
 int  intro_init(HWND h){
@@ -72,13 +78,9 @@ int  intro_init(HWND h){
 		MessageBox(0, info, "Error Vert!", MB_OK | MB_ICONEXCLAMATION);
 	}
 	glGetProgramiv(fragmentShader, GL_LINK_STATUS, &result);
-	glGetShaderInfoLog(fragmentShader, 1024, NULL, (char *)info);
-	if (!result) {
-		MessageBox(0, info, "Frag Error! (1)", MB_OK | MB_ICONEXCLAMATION);
-	}
 	glGetProgramInfoLog(fragmentShader, 1024, NULL, (char *)info);
 	if (!result) {
-		MessageBox(0, info, "Frag Error! (2)", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(0, info, "Frag Error!", MB_OK | MB_ICONEXCLAMATION);
 	}
 	glGetProgramiv(postProcessingShader, GL_LINK_STATUS, &result);
 	glGetProgramInfoLog(postProcessingShader, 1024, NULL, (char *)info);
@@ -108,13 +110,25 @@ int  intro_init(HWND h){
 	fparams[1] = XRES;
 	fparams[2] = YRES;
 
+	//glUniformBlockBinding(fragmentShader, 0, 0);
+
 	// allocate memory for light buffer
+	glGenBuffers(1, &mylightbuffer);
 	glBindBuffer(GL_UNIFORM_BUFFER, mylightbuffer);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(Light) * NR_LIGHTS, NULL, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-	// bind light buffer to location 1
-	glBindBufferBase(GL_UNIFORM_BUFFER, 1, mylightbuffer);
+	// bind light buffer to location 0
+	glBindBufferRange(GL_UNIFORM_BUFFER, 0, mylightbuffer,0, sizeof(Light) * NR_LIGHTS);
+
+	// allocate memory for balls buffer
+	glGenBuffers(1, &myballbuffer);
+	glBindBuffer(GL_UNIFORM_BUFFER, myballbuffer);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(Ball) * NR_BALLS, NULL, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 1);
+
+	// bind balls buffer to location 1
+	glBindBufferRange(GL_UNIFORM_BUFFER, 1, myballbuffer, 0, sizeof(Ball) * NR_BALLS);
 
 	return 1;
 }
@@ -285,13 +299,24 @@ void intro_do(long time)
 	fparams[9] = (float)camLook.y;
 	fparams[10] = (float)camLook.z;
 
-	for (int i = 0; i < NR_LIGHTS; i++)
+	for (int i =  0; i < NR_LIGHTS; i++)
 	{
-		lights[i].position = Vec3{ (double)i, (double)i * 2, (double)i * 3 };
+		lights[i].pos = Vec4{ (float)sin(time / 300.f), i*2+(float)sin(time / 1200.f), 0.f,0.f };
+		lights[i].color = Vec4{ (float)i/NR_LIGHTS, -(float)i / NR_LIGHTS,0.f };
 	}
 
 	glBindBuffer(GL_UNIFORM_BUFFER, mylightbuffer);
-	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(lights), lights);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Light)*NR_LIGHTS, lights);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	for (int i = 0; i < NR_BALLS; i++)
+	{
+		myballs[i].pos = Vec4{ (float)i,5.f,0.f,0.4f+i/10.f };
+		myballs[i].color = Vec4{ 0.f,0.f,0.f,0.f };
+	}
+
+	glBindBuffer(GL_UNIFORM_BUFFER, myballbuffer);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Ball)*NR_BALLS, myballs);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	// Render

@@ -19,17 +19,28 @@ layout (location=0) out vec4 color;
 in vec2 p;
 
 struct Light{
-	vec3 position;
-	vec3 color;
-	float radius;
-	float PLACEHOLDER;
+	vec4 position;
+	vec4 color;
 };
 
 #define NR_LIGHTS 16
-layout (std140, binding = 1) uniform LightBlock {
-    Light lights[NR_LIGHTS];
-}lightBlock;
+layout (std140, binding = 0) uniform LightBlock{
+	Light lights[NR_LIGHTS];
+};
+struct Ball{
+	vec4 position; // pos xyz radius w
+	vec4 velocity; // velocity xyz
+};
 
+#define NR_BALLS 16
+layout (std140, binding = 1) uniform BallBlock{
+	Ball balls[NR_BALLS];
+};
+
+//
+// layout (std140, binding = 1) uniform LightBlock {
+//     Light lights[NR_LIGHTS];
+// }lightBlock;
 vec2 resolution = vec2(fpar[0].y, fpar[0].z); // TODO: get this as a uniform
 
 #define TIME fpar[0].x
@@ -65,7 +76,7 @@ struct raymarchResult
 };
 
 
-Light sun = Light(vec3(-0.3, -0.8, 0.2),vec3(1.0,1.0,0.9),-1,0);
+Light sun = Light(vec4(-0.3, -0.8, 0.2,1.0),vec4(1.0,1.0,0.9,-1.0));
 
 //	Classic Perlin 3D Noise
 //	by Stefan Gustavson
@@ -306,10 +317,13 @@ float worldSDF1(in vec3 v)
 // stuff that doesn't cast shadows (i.e. lights)
 float worldSDF3(in vec3 v){
 	float sdf_agg = 1000.0;
-	sdf_agg=min(sdf_agg,sphereSDF(v,lightBlock.lights[1].position,.5));
-	// for(int i=0;i<NR_LIGHTS;i++){
-	// 	sdf_agg=min(sdf_agg,sphereSDF(v,LightBlock[i],.5));
-	// }
+	// sdf_agg=min(sdf_agg,sphereSDF(v,lights[3].position.xyz+vec3(0,10,2),.5));
+	for(int i=0;i<NR_LIGHTS;i++){
+		sdf_agg=min(sdf_agg,sphereSDF(v,lights[i].position.xyz,.5));
+	}
+	for(int i=0;i<NR_BALLS;i++){
+		sdf_agg=min(sdf_agg,sphereSDF(v,balls[i].position.xyz,balls[i].position.w));
+	}
 	return sdf_agg;
 }
 
@@ -317,6 +331,12 @@ float worldSDF(in vec3 v)
 {
 
 	return min(worldSDF1(v),min(worldSDF2(v),worldSDF3(v)));
+}
+
+float shadowSDF(in vec3 v)
+{
+
+	return min(worldSDF1(v),worldSDF2(v));
 }
 // ----------------------------------------------------- //
 // Lights
@@ -350,9 +370,11 @@ raymarchResult worldMarch(in vec3 ro, in vec3 rd, const int MAX_STEPS) {
 	// default material
 	marched.material.diffuseColor=vec3(1);
 	marched.hit = true;
+	// vec3 dist=v;
 	for(int i = 0; i < MAX_STEPS; i++) {
 
 		float samp = worldSDF(ro); // find SDF at current march )
+		// dist+=samp;
 		// If SDF is low enough, handle the collision.
 		if(abs(samp) < MIN_HIT_DIST) {
 			break;
@@ -385,7 +407,7 @@ float worldShadow(in vec3 ro, in vec3 rd, float hardness, const int MAX_STEPS) {
 	float psamp = 1e20;
 
 	for(int i = 0; i < MAX_STEPS; i++) {
-		float samp = worldSDF(ro);
+		float samp = shadowSDF(ro);
 
 		float y = samp*samp/(2.0*psamp);
 		float d = sqrt(samp*samp-y*y);
@@ -406,6 +428,36 @@ float worldShadow(in vec3 ro, in vec3 rd, float hardness, const int MAX_STEPS) {
 	return light;
 }
 
+float pointShadow(in vec3 ro, in vec3 toTarget, float hardness, const int MAX_STEPS) {
+	vec3 rd=-normalize(toTarget);
+	ro += rd*MIN_HIT_DIST*30.0; // Increasing the factor here decreases the chance of banding, but makes less accurate shadows.
+
+	float light = 1.0;
+	float dist = 0.0;
+	float psamp = 1e20;
+
+	for(int i = 0; i < MAX_STEPS; i++) {
+		float samp = shadowSDF(ro);
+
+		float y = samp*samp/(2.0*psamp);
+		float d = sqrt(samp*samp-y*y);
+
+		light = min(light, hardness*d/max(0.0, dist-y));
+
+		if(samp < MIN_HIT_DIST) {
+			return 0.0;
+		}
+
+		if(dist>length(toTarget)){
+			break;
+		}
+		ro += rd*samp;
+		dist += samp;
+		psamp = samp;
+	}
+	return light;
+}
+
 vec3 skyColor(in vec3 v){
 	float factor=abs(dot(v,vec3(0,1,0)));
 	float cloud=max(0,cnoise(v*vec3(2,6,2)+vec3(TIME*0.1)) + cnoise(5*v*vec3(2,6,2)+vec3(TIME*0.1))*0.2);
@@ -419,9 +471,9 @@ vec3 render2(in vec3 ro, in vec3 rd)
 	vec3 diffuse = cameraCast.material.diffuseColor;
 	vec3 cool;
 
-	vec3 sunAlbedo = sun.color*max(vec3(0.0), dot(-normalize(sun.position), cameraCast.normal));
+	vec3 sunAlbedo = sun.color.rgb*max(vec3(0.0), dot(-normalize(sun.position.xyz), cameraCast.normal));
 	// sunAlbedo*( (sin(cameraCast.position.x)+sin(cameraCast.position.x)+sin(cameraCast.position.x))*0.2 + 0.8);
-	cool += vec3(worldShadow(cameraCast.position, -sun.position, 200.0, 200))*sunAlbedo;
+	cool += vec3(worldShadow(cameraCast.position.xyz, -sun.position.xyz, 200.0, 200))*sunAlbedo;
 
 	return cool;
 }
@@ -430,8 +482,8 @@ vec3 render(in vec3 ro, in vec3 rd)
 {
 	raymarchResult cameraCast = worldMarch(ro, rd, 200);
 	if(!cameraCast.hit) return skyColor(rd); // sky color
-	vec3 diffuse = cameraCast.material.diffuseColor;
-	vec3 cool=diffuse*0.8*(
+	vec3 albedo = cameraCast.material.diffuseColor;
+	vec3 cool=albedo*0.8*(
 		max(0,dot(cameraCast.normal,vec3(0,0.7,0.7)))+
 		max(0,dot(cameraCast.normal,vec3(0,-0.7,0.7)))+
 		max(0,dot(cameraCast.normal,vec3(0.4,0.3,-0.7)))
@@ -440,11 +492,26 @@ vec3 render(in vec3 ro, in vec3 rd)
 	// lightam = max(vec3(0.0), dot(-lightDir, cameraCast.normal))*0.5*vec3(0.4, 0.8, 1.0);
 	// vec3 cool = vec3(worldShadow(cameraCast.position, -lightDir, 60.0, 100))*diffuse*0.4 + vec3(0.);
 
-	vec3 sunAlbedo = sun.color*max(vec3(0.0), dot(-normalize(sun.position), cameraCast.normal));
-	// sunAlbedo=*( (sin(cameraCast.position.x)+sin(cameraCast.position.x)+sin(cameraCast.position.x))*0.2 + 0.8);
-	cool += vec3(worldShadow(cameraCast.position, -sun.position, 200.0, 200))*sunAlbedo;
+	vec3 diffuse = sun.color.rgb*max(vec3(0.0), dot(-normalize(sun.position.xyz), cameraCast.normal));
+	// if(dot(diffuse,diffuse)>0)
+		cool += vec3(worldShadow(cameraCast.position.xyz, -sun.position.xyz, 200.0, 200))*diffuse;
 
-	if(cameraCast.material.shininess>0.5){
+	// diffuse = sun.color.rgb;//*max(vec3(0.0), dot(-normalize(sun.position.xyz), cameraCast.normal));
+	// cool += diffuse*vec3(pointShadow(cameraCast.position.xyz, vec3(0,12+12*sin(TIME*.2),0), 200.0, 200));
+
+	vec3 toLight;
+	float ldist;
+	for(int i=5;i<6;i++){
+		toLight=cameraCast.position-lights[i].position.xyz;
+		ldist=length(toLight);
+		if(ldist>50)continue;
+		//lights[i].color.rgb *
+		vec3 diffuse =  max(vec3(0),dot(cameraCast.normal,-toLight/ldist))*cnoise(vec3(TIME*100));//*vec3(1-ldist/15);
+		cool += diffuse*vec3(pointShadow(cameraCast.position.xyz, toLight, 50.0, 50))*vec3(mod(i,1.3f),.3+mod(i,1.3f),.6+mod(i,1.3f));
+		//vec3(worldShadow(cameraCast.position.xyz, -toLight, 200.0, 200))*diffuse*0.1;
+	}
+
+	if(cameraCast.material.shininess>0.7){
 		cameraCast.normal=normalize(cameraCast.normal+vec3(cnoise(vec3(cameraCast.position.xz*0.5,TIME*0.4)),0,0)*0.08+vec3(cnoise(vec3(cameraCast.position.xz*2,TIME)),0,0)*0.03);
 		vec3 reflection = render2(cameraCast.position + cameraCast.normal*0.01, reflect(rd, cameraCast.normal))*0.8*vec3(0.7, 0.9, 1.0)*(1.1-dot(cameraCast.normal, normalize(ro - cameraCast.position)))*cameraCast.material.shininess;
 		cool = mix(cool,reflection,cameraCast.material.shininess);

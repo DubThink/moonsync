@@ -24,13 +24,17 @@ static char *strs[] = {
 	"glFramebufferTexture",
 	"glBindBuffer",
 	"glBufferData",
-	"glBindBufferBase",
+	"glBindBufferRange",
 	"glBufferSubData",
+	"glGenBuffers",
+	"glUniformBlockBinding",
+	"glBufferSubData",
+	"glBufferSubData",
+
 
     #ifdef DEBUG
 	"glGetProgramiv",
 	"glGetProgramInfoLog",
-	"glGetShaderInfoLog",
     #endif
     };
 
