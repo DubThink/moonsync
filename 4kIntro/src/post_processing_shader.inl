@@ -1,4 +1,4 @@
-/* File generated with Shader Minifier 1.1.4
+/* File generated with Shader Minifier 1.1.6
  * http://www.ctrl-alt-test.fr
  */
 #ifndef POST_PROCESSING_SHADER_INL_

@@ -148,8 +148,8 @@ static int window_init( WININFO *info )
     if( !RegisterClass(&wc) )
         return( 0 );
 
-    if( info->full )
-    {
+#ifdef FULLSCREEN
+
         dmScreenSettings.dmSize       = sizeof(DEVMODE);
         dmScreenSettings.dmFields     = DM_BITSPERPEL|DM_PELSWIDTH|DM_PELSHEIGHT;
         dmScreenSettings.dmBitsPerPel = 32;
@@ -157,20 +157,19 @@ static int window_init( WININFO *info )
         dmScreenSettings.dmPelsHeight = YRES;
 
         if( ChangeDisplaySettings(&dmScreenSettings,CDS_FULLSCREEN)!=DISP_CHANGE_SUCCESSFUL)
-            return( 0 );
+            return (0);
 
         dwExStyle = WS_EX_APPWINDOW;
         dwStyle   = WS_VISIBLE | WS_POPUP;
 
 		while( ShowCursor( 0 )>=0 );	// hide cursor
-    }
-    else
-    {
+#else
         dwExStyle = 0;
         dwStyle   = WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_MAXIMIZEBOX | WS_OVERLAPPED;
 		dwStyle   = WS_VISIBLE | WS_OVERLAPPEDWINDOW|WS_POPUP;
 
-    }
+#endif // FULLSCREEN
+
 
     rec.left   = 0;
     rec.top    = 0;

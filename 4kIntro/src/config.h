@@ -8,7 +8,11 @@
 #else
 #define XRES 1920
 #define YRES 1080
+
+#define FULLSCREEN
+
 #endif
+
 
 #define MOUSE_SENSE 0.1
 //#define SOUND_DISABLED

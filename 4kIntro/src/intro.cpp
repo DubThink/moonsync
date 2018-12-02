@@ -28,13 +28,9 @@ GLuint postProcessingShader;
 
 static float fparams[4 * 4];
 
-#ifdef DEBUG
 HWND hWnd;
 int  intro_init(HWND h){
 	hWnd = h;
-#else
-int  intro_init(void){
-#endif
 
 	if (!EXT_Init())
 		return 0;
@@ -217,14 +213,16 @@ void intro_do(long time)
 	
 	// -------------- CAMERA CONTROL
 	if (hWnd == GetForegroundWindow()) {
-		cam.speed = (GetAsyncKeyState(VK_SHIFT) ? 1.0 : 0.1);
+		cam.speed = (GetAsyncKeyState(VK_SHIFT) ? .8 : 0.15);
 		cam.frameTime=frameTime/20.0;
 		if (GetAsyncKeyState('W'))cam.moveForward(1);
 		if (GetAsyncKeyState('S'))cam.moveForward(-1);
 		if (GetAsyncKeyState('A'))cam.moveRight(-1);
 		if (GetAsyncKeyState('D'))cam.moveRight(1);
-		if (GetAsyncKeyState(VK_LEFT))cam.lookRight(-1);
-		if (GetAsyncKeyState(VK_RIGHT))cam.lookRight(1);
+		if (GetAsyncKeyState(VK_SPACE))cam.moveUp(.75);
+		if (GetAsyncKeyState(VK_CONTROL))cam.moveUp(-.75); 
+		if (GetAsyncKeyState(VK_LEFT))cam.lookRight(-2);
+		if (GetAsyncKeyState(VK_RIGHT))cam.lookRight(2);
 		if (GetAsyncKeyState(VK_DOWN))cam.lookUp(-1);
 		if (GetAsyncKeyState(VK_UP))cam.lookUp(1);
 

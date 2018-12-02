@@ -6,6 +6,27 @@
 #include "intro.h"
 #include "4klang.h"
 #include "config.h"
+#include "v2mplayer.h"
+#include "libv2.h"
+
+typedef struct
+{
+	//---------------
+	HINSTANCE   hInstance;
+	HDC         hDC;
+	HGLRC       hRC;
+	HWND        hWnd;
+	//---------------
+	int         full;
+	//---------------
+	char        wndclass[4];	// window class and title :)
+	//---------------
+}WININFO;
+
+// v2 synth code
+
+static V2MPlayer player;
+extern "C" const sU8 theTune[];
 
 static const PIXELFORMATDESCRIPTOR pfd = {
     sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW|PFD_SUPPORT_OPENGL|PFD_DOUBLEBUFFER, PFD_TYPE_RGBA,
@@ -83,6 +104,11 @@ void  InitSound()
 	waveOutOpen(&hWaveOut, WAVE_MAPPER, &WaveFMT, NULL, 0, CALLBACK_NULL);
 	waveOutPrepareHeader(hWaveOut, &WaveHDR, sizeof(WaveHDR));
 	waveOutWrite(hWaveOut, &WaveHDR, sizeof(WaveHDR));
+
+	player.Init();
+	player.Open(theTune);
+
+	dsInit(player.RenderProxy, &player, GetForegroundWindow());
 }
 
 //----------------------------------------------------------------------------
@@ -102,7 +128,7 @@ void entrypoint( void )
     wglMakeCurrent(hDC,wglCreateContext(hDC));
 
     // init intro
-    if( !intro_init() ) return;
+    if( !intro_init(hWnd) ) return;
 
 #ifndef SOUND_DISABLED
 	InitSound();
@@ -119,7 +145,7 @@ void entrypoint( void )
         t = timeGetTime() - to;
         intro_do(t);
         wglSwapLayerBuffers( hDC, WGL_SWAP_MAIN_PLANE ); //SwapBuffers( hDC );
-    }while (!GetAsyncKeyState(VK_ESCAPE) && MMTime.u.sample < MAX_SAMPLES);
+    }while (!GetAsyncKeyState(VK_ESCAPE));
 
     #ifdef CLEANDESTROY
     sndPlaySound(0,0);
