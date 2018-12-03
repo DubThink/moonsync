@@ -23,7 +23,7 @@ struct Light{
 	vec4 color;
 };
 
-#define NR_LIGHTS 16
+#define NR_LIGHTS 8
 layout (std140, binding = 0) uniform LightBlock{
 	Light lights[NR_LIGHTS];
 };
@@ -32,7 +32,7 @@ struct Ball{
 	vec4 velocity; // velocity xyz
 };
 
-#define NR_BALLS 16
+#define NR_BALLS 8
 layout (std140, binding = 1) uniform BallBlock{
 	Ball balls[NR_BALLS];
 };
@@ -266,11 +266,11 @@ float worldSDF1(in vec3 v)
 {
 	float sdf_agg = 0.0;
 
-	float plane = sdPlane(v, vec4(0, 1.0, 0.0, 1.0));
+	float plane = sdPlane(v, vec4(0, 1.0, 0.0, 2.0));
 	vec3 q,r;
 
 	// enemy
-	float playerModel = sdEnemy(v,vec3(0,16,0));
+	float playerModel = sdEnemy(v,vec3(0,20,0));
 
 	float box1 = sdBox(v, vec3(36.0, 22.0, 16.0));
 	float box2 = sdBox(v, vec3(34.5, 35.0, 14.5));
@@ -318,9 +318,9 @@ float worldSDF1(in vec3 v)
 float worldSDF3(in vec3 v){
 	float sdf_agg = 1000.0;
 	// sdf_agg=min(sdf_agg,sphereSDF(v,lights[3].position.xyz+vec3(0,10,2),.5));
-	for(int i=0;i<NR_LIGHTS;i++){
-		sdf_agg=min(sdf_agg,sphereSDF(v,lights[i].position.xyz,.5));
-	}
+	// for(int i=0;i<NR_LIGHTS;i++){
+	// 	sdf_agg=min(sdf_agg,sphereSDF(v,lights[i].position.xyz,.5));
+	// }
 	for(int i=0;i<NR_BALLS;i++){
 		sdf_agg=min(sdf_agg,sphereSDF(v,balls[i].position.xyz,balls[i].position.w));
 	}
@@ -462,6 +462,7 @@ vec3 skyColor(in vec3 v){
 	float factor=abs(dot(v,vec3(0,1,0)));
 	float cloud=max(0,cnoise(v*vec3(2,6,2)+vec3(TIME*0.1)) + cnoise(5*v*vec3(2,6,2)+vec3(TIME*0.1))*0.2);
 	return mix( vec3(.4,.5,1.),vec3(.5,.5,1.),factor)+cloud*factor;
+	return vec3(.4,.5,1.);
 }
 
 vec3 render2(in vec3 ro, in vec3 rd)
@@ -480,7 +481,7 @@ vec3 render2(in vec3 ro, in vec3 rd)
 
 vec3 render(in vec3 ro, in vec3 rd)
 {
-	raymarchResult cameraCast = worldMarch(ro, rd, 200);
+	raymarchResult cameraCast = worldMarch(ro, rd, 100);
 	if(!cameraCast.hit) return skyColor(rd); // sky color
 	vec3 albedo = cameraCast.material.diffuseColor;
 	vec3 cool=albedo*0.8*(
@@ -494,20 +495,20 @@ vec3 render(in vec3 ro, in vec3 rd)
 
 	vec3 diffuse = sun.color.rgb*max(vec3(0.0), dot(-normalize(sun.position.xyz), cameraCast.normal));
 	// if(dot(diffuse,diffuse)>0)
-		cool += vec3(worldShadow(cameraCast.position.xyz, -sun.position.xyz, 200.0, 200))*diffuse;
+		cool += vec3(worldShadow(cameraCast.position.xyz, -sun.position.xyz, 40.0, 100))*diffuse;
 
 	// diffuse = sun.color.rgb;//*max(vec3(0.0), dot(-normalize(sun.position.xyz), cameraCast.normal));
 	// cool += diffuse*vec3(pointShadow(cameraCast.position.xyz, vec3(0,12+12*sin(TIME*.2),0), 200.0, 200));
 
 	vec3 toLight;
 	float ldist;
-	for(int i=5;i<6;i++){
+	for(int i=0;i<2;i++){
 		toLight=cameraCast.position-lights[i].position.xyz;
 		ldist=length(toLight);
 		if(ldist>50)continue;
 		//lights[i].color.rgb *
-		vec3 diffuse =  max(vec3(0),dot(cameraCast.normal,-toLight/ldist))*cnoise(vec3(TIME*100));//*vec3(1-ldist/15);
-		cool += diffuse*vec3(pointShadow(cameraCast.position.xyz, toLight, 50.0, 50))*vec3(mod(i,1.3f),.3+mod(i,1.3f),.6+mod(i,1.3f));
+		vec3 diffuse =  lights[i].color.rgb * max(vec3(0),dot(cameraCast.normal,-toLight/ldist));//*cnoise(vec3(TIME*100));//*vec3(1-ldist/15);
+		cool += diffuse*vec3(pointShadow(cameraCast.position.xyz, toLight, 50.0, 50))*0.2;//*vec3(mod(i,1.3f),.3+mod(i,1.3f),.6+mod(i,1.3f));
 		//vec3(worldShadow(cameraCast.position.xyz, -toLight, 200.0, 200))*diffuse*0.1;
 	}
 
@@ -535,6 +536,7 @@ Camera getCam()
 	// find view ray - fustrum intersection for this pixel
 	vec3 fustrumFront = cam.position + cam.forwards;
 	vec2 screenSpace = 2.0*gl_FragCoord.xy/resolution.xy - 1.0;
+	screenSpace*=0.6;
 	float aspect = resolution.x/resolution.y;
 	vec3 fustrumIntersect = fustrumFront + screenSpace.x*cam.left*aspect + screenSpace.y*cam.up;
 
@@ -549,6 +551,10 @@ void main(void) {
 		waterpos[i]=vec3(cnoise(vec3(i,TIME*2,0)),cnoise(vec3(i,TIME*2,10)),cnoise(vec3(i,TIME*2,20)));
 	}
 	Camera cam1 = getCam();
-
-	color = vec4(render(cam1.position, cam1.rayDir), 1.0);
+	//crosshair
+	if(abs(distance(gl_FragCoord.xy,resolution.xy/2)-6)<1){
+		color = vec4(1.,.3,.15, 1.0);
+	} else {
+		color = vec4(render(cam1.position, cam1.rayDir), 1.0);
+	}
 }

@@ -2,18 +2,18 @@
 #include "debug_camera.h"
 
 constexpr float HALF_PI = 1.570795f;
-Vec3 DebugCamera::getPosition()
+vec3 DebugCamera::getPosition()
 {
 	return pos;
 }
 
-Vec3 DebugCamera::getLookDirection()
+vec3 DebugCamera::getLookDirection()
 {
 	xRot = (xRot>HALF_PI) ? HALF_PI : (xRot < -HALF_PI ? -HALF_PI : xRot);
-	return Vec3{ cos(yRot)*cos(xRot),sin(xRot),sin(yRot)*cos(xRot) };
+	return vec3(cos(yRot)*cos(xRot),sin(xRot),sin(yRot)*cos(xRot));
 }
 
-Vec3 DebugCamera::getLookAt()
+vec3 DebugCamera::getLookAt()
 {
 	return getPosition() + getLookDirection();
 }
@@ -27,7 +27,7 @@ void DebugCamera::moveForward(float amt)
 
 void DebugCamera::moveRight(float amt)
 {
-	pos += cross(getLookDirection(), Vec3{ 0,1 })*speed*amt*frameTime;
+	pos += cross(getLookDirection(), vec3{ 0,1,0 })*speed*amt*frameTime;
 }
 
 void DebugCamera::moveUp(float amt)

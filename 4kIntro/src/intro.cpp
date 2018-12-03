@@ -14,9 +14,11 @@
 #include "debug_help.h"
 #include "debug_camera.h"
 #include "vec3.h"
+//#include "worldsdf.h"
+#include "ballPhysics.h"
 
 //remove
-#include <direct.h>
+//#include <direct.h>
 //#include <string.h>
 
 GLuint fragmentShader;
@@ -29,8 +31,7 @@ GLuint postProcessingShader;
 
 static float fparams[4 * 4];
 
-#define NR_LIGHTS 16
-struct Vec4 { float x, y, z, w; };
+#define NR_LIGHTS 8
 struct Light {
 	Vec4 pos;
 	Vec4 color;
@@ -38,15 +39,11 @@ struct Light {
 GLuint mylightbuffer;
 Light lights[NR_LIGHTS];
 
-#define NR_BALLS 16
-struct Ball {
-	Vec4 pos;
-	Vec4 vel;
-};
 GLuint myballbuffer;
-Light myballs[NR_BALLS];
+Ball myballs[NR_BALLS];
 
 HWND hWnd;
+
 int  intro_init(HWND h){
 	hWnd = h;
 
@@ -129,6 +126,16 @@ int  intro_init(HWND h){
 
 	// bind balls buffer to location 1
 	glBindBufferRange(GL_UNIFORM_BUFFER, 1, myballbuffer, 0, sizeof(Ball) * NR_BALLS);
+
+	for (int i = 0; i < NR_BALLS; i++) {
+		allMyBalls[i].position = vec3(i*2 - 10, 10, 0);
+		allMyBalls[i].radius = 0.5 + 0.1*i;
+	}
+
+	lights[0].pos = Vec4{ 24.f, 14.f, 0.f,0.f };
+	lights[0].color = Vec4{ 1.0,0.95f,0.5f,0.f };
+	lights[1].pos = Vec4{-24.f, 14.f, 0.f,0.f };
+	lights[1].color = Vec4{ 0.8f,0.95f,0.95f,0.f };
 
 	return 1;
 }
@@ -219,8 +226,9 @@ long last_load = 0; // last shader load
 DebugCamera cam;
 long last_time=-1;
 float frameTime = 0;
-bool captureMouse = false;
-bool lastCaptureKey = false;
+
+// action bools
+bool tabWasLastPressed = false;
 
 void intro_do(long time)
 {
@@ -242,7 +250,7 @@ void intro_do(long time)
 		frameTime = time - last_time;
 	last_time = time;
 
-	captureMouse = GetAsyncKeyState(VK_TAB);
+	// action keys
 
 	
 	// -------------- CAMERA CONTROL
@@ -259,6 +267,11 @@ void intro_do(long time)
 		if (GetAsyncKeyState(VK_RIGHT))cam.lookRight(2);
 		if (GetAsyncKeyState(VK_DOWN))cam.lookUp(-1);
 		if (GetAsyncKeyState(VK_UP))cam.lookUp(1);
+
+		if (GetAsyncKeyState(VK_LBUTTON)) {
+			allMyBalls[3].position = cam.getPosition();
+			allMyBalls[3].velocity = cam.getLookDirection()*20;
+		}
 
 		POINT screenMouse;
 		GetCursorPos(&screenMouse);
@@ -290,8 +303,8 @@ void intro_do(long time)
 	fparams[2].xyz = look dir
 	*/
 	fparams[0] = time / 1000.0f;
-	Vec3 camPos = cam.getPosition();
-	Vec3 camLook = cam.getLookDirection();
+	vec3 camPos = cam.getPosition();
+	vec3 camLook = cam.getLookDirection();
 	fparams[4] = (float)camPos.x;
 	fparams[5] = (float)camPos.y;
 	fparams[6] = (float)camPos.z;
@@ -299,21 +312,18 @@ void intro_do(long time)
 	fparams[9] = (float)camLook.y;
 	fparams[10] = (float)camLook.z;
 
-	for (int i =  0; i < NR_LIGHTS; i++)
-	{
-		lights[i].pos = Vec4{ (float)sin(time / 300.f), i*2+(float)sin(time / 1200.f), 0.f,0.f };
-		lights[i].color = Vec4{ (float)i/NR_LIGHTS, -(float)i / NR_LIGHTS,0.f };
-	}
 
 	glBindBuffer(GL_UNIFORM_BUFFER, mylightbuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Light)*NR_LIGHTS, lights);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-	for (int i = 0; i < NR_BALLS; i++)
-	{
-		myballs[i].pos = Vec4{ (float)i,5.f,0.f,0.4f+i/10.f };
-		myballs[i].color = Vec4{ 0.f,0.f,0.f,0.f };
-	}
+
+	//RaymarchResult result = worldMarch(vec3(0, 15, 0), vec3(sin(time / 5000.f), 0, cos(time / 5000.f)), 800,0.5f);
+	//myballs[0].pos = Vec4{ result.position.x,result.position.y,result.position.z,0.5f};
+	updatePhysics(frameTime/1000.0);
+
+	copyBalls(myballs);
+
 
 	glBindBuffer(GL_UNIFORM_BUFFER, myballbuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Ball)*NR_BALLS, myballs);
