@@ -219,6 +219,7 @@ call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\debug_camera.h" />
     <ClInclude Include="src\debug_help.h" />
+    <ClInclude Include="src\enemy.h" />
     <ClInclude Include="src\ext.h" />
     <ClInclude Include="src\fp.h" />
     <ClInclude Include="src\glext.h" />
@@ -235,6 +236,7 @@ call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
     <ClCompile Include="src\ballPhysics.cpp" />
     <ClCompile Include="src\debug_camera.cpp" />
     <ClCompile Include="src\debug_help.cpp" />
+    <ClCompile Include="src\enemy.cpp" />
     <ClCompile Include="src\ext.cpp" />
     <ClCompile Include="src\intro.cpp" />
     <ClCompile Include="src\main_win_deb.cpp">

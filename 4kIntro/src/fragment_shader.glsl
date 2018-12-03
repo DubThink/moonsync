@@ -32,10 +32,22 @@ struct Ball{
 	vec4 velocity; // velocity xyz
 };
 
-#define NR_BALLS 8
+#define NR_BALLS 16
 layout (std140, binding = 1) uniform BallBlock{
 	Ball balls[NR_BALLS];
 };
+
+struct Enemy{
+	vec4 position; // pos xyz lifestate w
+	vec4 other; // other xyz health w
+};
+
+#define NR_ENEMIES 8
+layout (std140, binding = 2) uniform EnemyBlock{
+	Enemy enemies[NR_ENEMIES];
+};
+
+#define PROJECTILE_OFFSET 4
 
 //
 // layout (std140, binding = 1) uniform LightBlock {
@@ -209,7 +221,8 @@ float opSmoothUnion( float d1, float d2, float k )
 
 float sphereSDF(in vec3 v, in vec3 center, in float radius)
 {
-	return length(v - center) - radius;
+	v -= center;
+	return sqrt(dot(v,v)) - radius;
 }
 
 float sdPlane( vec3 p, vec4 n ) {
@@ -296,31 +309,32 @@ float sdLaser(in vec3 v){
 	return sdCapsule(v,vec3(.5f,0.f,0),vec3(-15.f,0,0)+laserWoggle*0.2,.03);
 }
 
-vec3 waterpos[6];
+vec3 waterpos[4];
 float worldSDF2(in vec3 v)
 {
 	float sdf_agg = 0.0;
 
 	sdf_agg = sdPlane(v, vec4(0, 1.0, 0.0, 1.0));
-
-	for(int i=0;i<6;i++){
+	if(length(v.xz)>4)return min(length(v.xz),sdf_agg);
+	for(int i=0;i<4;i++){
 		sdf_agg=opSmoothUnion(sdf_agg,sphereSDF(v,waterpos[i]*vec3(1,10,1),1),.5);
 	}
 	return sdf_agg;
 }
 
-float sdEnemy(in vec3 v,in vec3 p){
+float sdEnemy(in vec3 v,in vec3 p, float lifestate){
 	vec3 toCam=normalize(p-fpar[1].xyz);
 	v-=p;
 
 	v=v*pointatY(toCam);
 	v=v*pointatX(toCam);
-	float playerModel = sphereSDF(v,vec3(0),1);//sdVerticalCapsule(v,2,1);
+	float playerModel = sphereSDF(v,vec3(0),min(1,lifestate));//sdVerticalCapsule(v,2,1);
+	// if(playerModel>1)return playerModel;
 	playerModel = opSmoothSubtraction(
-		min(sphereSDF(vec3(v.x,v.y,abs(v.z)),vec3(.6,.3,.4),.3),
-		sphereSDF(vec3(v.x,v.y,v.z),vec3(.6,-.3,0),.4)),
+		min(sphereSDF(vec3(v.x,v.y,abs(v.z)),vec3(.6,.3,.4),.3), // eye sockets
+		sphereSDF(vec3(v.x,v.y,v.z),vec3(.6,-.3,0),.4+max(0,lifestate-1))), // mouth
 		playerModel,.1);
-	return min(sphereSDF(vec3(v.x,v.y,abs(v.z)),vec3(.6,.3,.4),.1),playerModel);
+	return min(sphereSDF(vec3(v.x,v.y,abs(v.z)),vec3(.6,.3,.4),min(.1,lifestate-.9)),playerModel); // eyes
 }
 
 float worldSDF1(in vec3 v)
@@ -331,9 +345,8 @@ float worldSDF1(in vec3 v)
 	vec3 q,r;
 
 	// enemy
-	float playerModel = sdEnemy(v,vec3(0,20,0));
 
-	float box1 = sdBox(v, vec3(36.0, 22.0, 16.0));
+	float box1 = sdBox(v, vec3(40.0, 22.0, 20.0));
 	float box2 = sdBox(v, vec3(34.5, 35.0, 14.5));
 	// -- Arches - lower floor
 	float archesLowerFloor = min(sdCappedCylinder(vec3(v.y-6,v.x,mod(v.z+5,10)-5),vec2(4.5,36)),sdCappedCylinder(vec3(mod(v.x+5,10)-5,v.z,v.y-6),vec2(4.5,15)));
@@ -348,45 +361,64 @@ float worldSDF1(in vec3 v)
 	float arches = opSmoothUnion(archesUpperFloor,archesLowerFloor,.5);
 	arches=min(arches,sdBox(v+vec3(0,0.75,0),vec3(36.0,.5, 15.0)));
 	arches = min(arches,min( sdBox(vec3(v.x-0,v.y-12,abs(v.z)-5), vec3(25.0, 1.,.25)),sdBox(vec3(abs(v.x)-25,v.y-12,v.z), vec3(.25, 1.,5))));
-	sdf_agg = min(opSubtraction(sdBox(v,vec3(24,35,4.5)),min(arches,opSubtraction(box2,box1))), playerModel);
-	// float blob = sin(4.0 * v.x) * sin(4.0 * v.y) * sin(4.0 * v.z) * 0.25 + sin(v.x) * sin(v.y) * sin(v.z)*0.1; // blobs on this sphere
+	sdf_agg = min(opSubtraction(sdBox(v,vec3(24,35,4.5)),min(arches,opSubtraction(box2,box1))), 100);
 
-	// vec3 v = v.xyz;
-
-	// v.xz = mod(v.xz, vec2(20.0, 20.0)) - vec2(10.0, 10.0);
-
-	// float sphere1 = sphereSDF(v, vec3(-0.0,10 - sin(v.x/10.0)*3.0 - sin(v.z/10.0),0), 4.0);
-	//
-	// float sphere2 = sphereSDF(v, vec3(-5.0, 10.0 - sin(v.x/10.0)*3.0 - sin(v.z/10.0)*3.0, 0.0), 2.0);
-	// float sphere3 = sphereSDF(v, vec3(0.0, 10.0 - sin(v.x/10.0)*3.0 - sin(v.z/10.0)*3.0, 5.0), 2.0);
-	// float sphere4 = sphereSDF(v, vec3(0.0, 10.0 - sin(v.x/10.0)*3.0 - sin(v.z/10.0)*3.0, -5.0), 2.0);
-	// float sphere5 = sphereSDF(v, vec3(5.0, 10.0 - sin(v.x/10.0)*3.0 - sin(v.z/10.0)*3.0, 0.0), 2.0);
-	//
-	// float c1 = opSmoothUnion(sphere1, sphere2, sin(TIME)*2.0+2.0); // unionize the spheres to make a... pinecone
-	// float c2 = opSmoothUnion(sphere3, sphere4, sin(TIME)*2.0+2.0);
-	// sdf_agg = opSmoothUnion(c1, c2, sin(TIME)*2.0+2.0);
-	// sdf_agg = opSmoothUnion(sphere5, sdf_agg, sin(TIME)*2.0+2.0);
-
-	// sdf_agg = opSmoothUnion(sdf_agg, plane, 3.0);
-
-	//sdf_agg = max(sdf_agg, -sdBox(v, vec3(4.0, 10.0, 4.0)));
-	// sdf_agg = opSmoothUnion(sdf_agg, sdBox(v, vec3(1.0, 10.0, 1.0)), 3.5);
-	// sdf_agg=min(sdf_agg,worldSDF2(v));
 	return sdf_agg;
 }
 
-// stuff that doesn't cast shadows (i.e. lights)
+// projectiles and stuff
 float worldSDF3(in vec3 v){
 	float sdf_agg = 1000.0;
 	// sdf_agg=min(sdf_agg,sphereSDF(v,lights[3].position.xyz+vec3(0,10,2),.5));
 	// for(int i=0;i<NR_LIGHTS;i++){
 	// 	sdf_agg=min(sdf_agg,sphereSDF(v,lights[i].position.xyz,.5));
 	// }
-	for(int i=3;i<4;i++){
+
+	// grenades (first ball is player)
+	for(int i=1;i<PROJECTILE_OFFSET;i++){
 		sdf_agg=min(sdf_agg,sphereSDF(v,balls[i].position.xyz,balls[i].position.w));
 	}
+
+	// enemy bullets
+	for(int i=PROJECTILE_OFFSET;i<PROJECTILE_OFFSET+4;i++){
+		sdf_agg=min(sdf_agg,sphereSDF(v,balls[i].position.xyz,balls[i].position.w));
+	}
+
+	for(int i=0;i<NR_ENEMIES;i++){
+		if(length(v-enemies[i].position.xyz)>3)
+			sdf_agg=min(sdf_agg,length(v-enemies[i].position.xyz)-2);
+		else
+			sdf_agg=min(sdEnemy(v,enemies[i].position.xyz,enemies[i].position.w),sdf_agg);
+	}
+
 	return sdf_agg;
 }
+
+float sdOmnibar(in vec3 v){
+	vec3 p=fpar[1].xyz;
+	// pseudo random numbers generated by thinking of random numbers
+
+	v-=p;
+	v=v*pointatY(fpar[2].xyz);
+	v=v*pointatX(fpar[2].xyz);
+	v+=vec3(.5	,-.35,-.4*(1-fpar[3].w));
+
+	float playerModel = sdCappedCylinder(vec3(v.x,v.z,v.y),vec2(.007,.4*fpar[3].w));//sdVerticalCapsule(v,2,1);
+	return playerModel;
+}
+
+// float sdOmnibarCaps(in vec3 v){
+// 	vec3 p=fpar[1].xyz;
+// 	// pseudo random numbers generated by thinking of random numbers
+//
+// 	v-=p;
+// 	v=v*pointatY(fpar[2].xyz);
+// 	v=v*pointatX(fpar[2].xyz);
+// 	v+=vec3(.5,-.35,0);
+//
+// 	float playerModel = sdCappedCylinder(vec3(v.x,abs(v.z)-.41,v.y),vec2(.02,.02));//sdVerticalCapsule(v,2,1);
+// 	return playerModel;
+// }
 
 float viewmodelSDFReflective(in vec3 v){
 	if(fpar[3].x>0.5)
@@ -395,7 +427,7 @@ float viewmodelSDFReflective(in vec3 v){
 }
 
 float viewmodelSDF(in vec3 v){
-	return min(viewmodelSDFReflective(v),sdLaser(v));
+	return min(min(viewmodelSDFReflective(v),sdOmnibar(v)),sdLaser(v));
 }
 
 float worldSDF(in vec3 v)
@@ -440,6 +472,7 @@ raymarchResult worldMarch(in vec3 ro, in vec3 rd, const int MAX_STEPS) {
 	raymarchResult marched;
 	// default material
 	marched.material.diffuseColor=vec3(1);
+	marched.material.specular=3.;
 	marched.material.emission=vec3(0);
 	marched.hit = true;
 	// vec3 dist=v;
@@ -461,11 +494,20 @@ raymarchResult worldMarch(in vec3 ro, in vec3 rd, const int MAX_STEPS) {
 	marched.position = ro;
 	marched.normal = calcWorldNormal(ro);
 	if(worldSDF2(ro)<MIN_HIT_DIST){
+		marched.material.diffuseColor=vec3(1.,1.,1.);
+		marched.material.shininess=0.8;
+	}if(worldSDF2(ro)<MIN_HIT_DIST){
+		marched.material.diffuseColor=vec3(1.,.1,.1);
 		marched.material.shininess=0.8;
 	}else if(viewmodelSDFReflective(ro)<MIN_HIT_DIST){
-		marched.material.shininess=0.8;
+		marched.material.diffuseColor=vec3(0.4,0.5,1.2);
+		marched.material.shininess=0.6;
 	}else if(sdLaser(ro)<MIN_HIT_DIST){
 		marched.material.emission=vec3(3,3,5);
+	}else if(sdOmnibar(ro)<MIN_HIT_DIST){
+		marched.material.diffuseColor=vec3(1.,.5,.5);
+		marched.material.shininess=0.6;
+		marched.material.emission=vec3(.5,0,0);
 	} else {
 		marched.material.shininess=0.2;
 		marched.material.diffuseColor=vec3(0.8);
@@ -543,7 +585,7 @@ vec3 skyColor(in vec3 v){
 
 vec3 render2(in vec3 ro, in vec3 rd)
 {
-	raymarchResult cameraCast = worldMarch(ro, rd, 100);
+	raymarchResult cameraCast = worldMarch(ro, rd, 50);
 	if(!cameraCast.hit) return skyColor(rd); // sky color
 	vec3 albedo = cameraCast.material.diffuseColor;
 	vec3 cool=albedo*0.17*(
@@ -568,14 +610,14 @@ vec3 render2(in vec3 ro, in vec3 rd)
 	// fx light
 	toLight=cameraCast.position-lights[2].position.xyz+lights[2].position.w*vec3(cnoise(vec3(TIME*100))*.3,cnoise(vec3(TIME*100*200))*.3,cnoise(vec3(TIME*100+100))*.3);
 	ldist=length(toLight);
-	if(lights[2].position.w>0&&ldist<50){
+	if(lights[2].position.w>0.1&&ldist<50){
 		vec3 diffuse =  lights[2].color.w*lights[2].color.rgb*max(0,dot(cameraCast.normal,-toLight/pow(ldist,1.3)))*(1+lights[2].position.w*cnoise(vec3(TIME*100)));
-		cool += diffuse*vec3(pointShadow(cameraCast.position.xyz, toLight, 60.0, 100));//*vec3(mod(i,1.3f),.3+mod(i,1.3f),.6+mod(i,1.3f));
+		cool += diffuse*vec3(pointShadow(cameraCast.position.xyz, toLight, 60.0, 50));//*vec3(mod(i,1.3f),.3+mod(i,1.3f),.6+mod(i,1.3f));
 	}
 
 	vec3 sunAlbedo = sun.color.rgb*max(vec3(0.0), dot(-normalize(sun.position.xyz), cameraCast.normal));
 	// sunAlbedo*( (sin(cameraCast.position.x)+sin(cameraCast.position.x)+sin(cameraCast.position.x))*0.2 + 0.8);
-	cool += vec3(worldShadow(cameraCast.position.xyz, -sun.position.xyz, 200.0, 100))*sunAlbedo;
+	cool += vec3(worldShadow(cameraCast.position.xyz, -sun.position.xyz, 200.0, 50))*sunAlbedo;
 	cool+=cameraCast.material.emission;
 
 	return cool;
@@ -591,13 +633,17 @@ vec3 render(in vec3 ro, in vec3 rd)
 		max(0,dot(cameraCast.normal,vec3(0,-0.7,0.7)))+
 		max(0,dot(cameraCast.normal,vec3(0.4,0.3,-0.7)))
 		)*vec3(.7,.5,1);
+	vec3 reflectRay=reflect(rd, cameraCast.normal);
+
 	// vec3 lightDir = normalize(light1dir);
 	// lightam = max(vec3(0.0), dot(-lightDir, cameraCast.normal))*0.5*vec3(0.4, 0.8, 1.0);
 	// vec3 cool = vec3(worldShadow(cameraCast.position, -lightDir, 60.0, 100))*diffuse*0.4 + vec3(0.);
 
 	vec3 diffuse = sun.color.rgb*max(vec3(0.0), dot(-normalize(sun.position.xyz), cameraCast.normal));
+	//vec3 spec = vec3(.3)*pow(max(dot(reflectRay,-sun.position.xyz),0),cameraCast.material.specular);
 	// if(dot(diffuse,diffuse)>0)
-		cool += vec3(worldShadow(cameraCast.position.xyz, -sun.position.xyz, 40.0, 100))*diffuse;
+	float shadow = worldShadow(cameraCast.position.xyz, -sun.position.xyz, 40.0, 100);
+	cool += shadow*diffuse;//+shadow*spec;
 
 	// diffuse = sun.color.rgb;//*max(vec3(0.0), dot(-normalize(sun.position.xyz), cameraCast.normal));
 	// cool += diffuse*vec3(pointShadow(cameraCast.position.xyz, vec3(0,12+12*sin(TIME*.2),0), 200.0, 200));
@@ -617,12 +663,12 @@ vec3 render(in vec3 ro, in vec3 rd)
 	// fx light
 	toLight=cameraCast.position-lights[2].position.xyz+lights[2].position.w*vec3(cnoise(vec3(TIME*100))*.3,cnoise(vec3(TIME*100*200))*.3,cnoise(vec3(TIME*100+100))*.3);
 	ldist=length(toLight);
-	if(lights[2].position.w>0&&ldist<50){
+	if(lights[2].position.w>0.1&&ldist<50){
 		vec3 diffuse =  lights[2].color.w*lights[2].color.rgb*max(0,dot(cameraCast.normal,-toLight/pow(ldist,1.3)))*(1+lights[2].position.w*cnoise(vec3(TIME*100)));
-		cool += diffuse*vec3(pointShadow(cameraCast.position.xyz, toLight, 60.0, 200));//*vec3(mod(i,1.3f),.3+mod(i,1.3f),.6+mod(i,1.3f));
+		cool += diffuse*vec3(pointShadow(cameraCast.position.xyz, toLight, 60.0, 100));//*vec3(mod(i,1.3f),.3+mod(i,1.3f),.6+mod(i,1.3f));
 	}
 
-	if(cameraCast.material.shininess>0.7){
+	if(cameraCast.material.shininess>0.5){
 		cameraCast.normal=normalize(cameraCast.normal+vec3(cnoise(vec3(cameraCast.position.xz*0.5,TIME*0.4)),0,0)*0.08+vec3(cnoise(vec3(cameraCast.position.xz*2,TIME)),0,0)*0.03);
 		vec3 reflection = render2(cameraCast.position + cameraCast.normal*0.01, reflect(rd, cameraCast.normal))*0.8*vec3(0.7, 0.9, 1.0)*(1.1-dot(cameraCast.normal, normalize(ro - cameraCast.position)))*cameraCast.material.shininess;
 		cool = mix(cool,reflection,cameraCast.material.shininess);
@@ -663,7 +709,7 @@ void main(void) {
 	gunDir=normalize(fpar[2].xyz+sin(vec3(TIME*.2,TIME*2.709,TIME*3.41))*0.01);
 	laserWoggle=vec3(cnoise(vec3(TIME*100))*.3,cnoise(vec3(TIME*100*200))*.3,cnoise(vec3(TIME*100+100)));
 	for(int i=0;i<6;i++){
-		waterpos[i]=vec3(cnoise(vec3(i,TIME*2,0)),cnoise(vec3(i,TIME*2,10)),cnoise(vec3(i,TIME*2,20)));
+		waterpos[i]=vec3(cnoise(vec3(i,TIME*.4,0)),cnoise(vec3(i,TIME*.4,10)),cnoise(vec3(i,TIME*.4,20)));
 	}
 	Camera cam1 = getCam();
 	//crosshair

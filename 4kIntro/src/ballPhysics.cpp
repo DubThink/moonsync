@@ -16,13 +16,13 @@ void updatePhysics(float dt){
 		ball = allMyBalls+i;
 		result.hit = true;
 		hitground = false;
-		ball->velocity += vec3(0.f, -1.5f, 0.f);
+		if(ball->gravity)ball->velocity += vec3(0.f, -1.5f, 0.f);
 		float timeLeft = dt;
 		//if (distanceToTravel < EPSILON)continue;
 		// run for PHYS_MAX_ITER while we still need to travel
 		for (int j = 0; j < PHYS_MAX_ITER&&timeLeft>0; j++) {
 			vnorm = normalize(ball->velocity);
-			result = worldMarch(ball->position+vnorm*EPSILON+calcWorldNormal(ball->position)*EPSILON, vnorm, 800, ball->radius, timeLeft*length(ball->velocity));
+			result = worldMarch(ball->position+vnorm*EPSILON+calcWorldNormal(ball->position)*EPSILON, vnorm, 400, ball->radius, timeLeft*length(ball->velocity));
 			if (!result.hit|| result.dist> timeLeft*length(ball->velocity)) {
 				ball->position += ball->velocity*dt;
 				break;

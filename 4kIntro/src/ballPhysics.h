@@ -2,7 +2,7 @@
 #define BALL_PHYSICS_H
 #include "vec3.h"
 
-#define NR_BALLS 8
+#define NR_BALLS 16
 #define PHYS_MAX_ITER 16
 
 
@@ -16,11 +16,13 @@ struct Ball {
 struct PhysBall {
 	vec3 position;
 	vec3 velocity;
-	float radius;
+	float radius=0;
 	bool onground;
 	float restitution = 0.5;
 	float friction = 0.02;
 	bool playerPhysics = false;
+	bool gravity = true;
+	float lifetime = 0;
 };
 
 

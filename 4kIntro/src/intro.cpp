@@ -18,6 +18,7 @@
 #include "worldsdf.h"
 #include "v2mplayer.h"
 #include "libv2.h"
+#include "enemy.h"
 //remove
 //#include <direct.h>
 //#include <string.h>
@@ -43,6 +44,9 @@ Light lights[NR_LIGHTS];
 GLuint myballbuffer;
 Ball myballs[NR_BALLS];
 PhysBall* playerBall = allMyBalls;
+
+GLuint enemybuffer;
+Ball myenemies[NR_ENEMIES];
 
 HWND hWnd;
 
@@ -149,10 +153,27 @@ int  intro_init(HWND h){
 	// bind balls buffer to location 1
 	glBindBufferRange(GL_UNIFORM_BUFFER, 1, myballbuffer, 0, sizeof(Ball) * NR_BALLS);
 
-	for (int i = 0; i < NR_BALLS; i++) {
+	// allocate memory for enemy buffer
+	glGenBuffers(1, &enemybuffer);
+	glBindBuffer(GL_UNIFORM_BUFFER, enemybuffer);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(Ball) * NR_ENEMIES, NULL, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 2);
+
+	// bind enemy buffer to location 1
+	glBindBufferRange(GL_UNIFORM_BUFFER, 2, enemybuffer, 0, sizeof(Ball) * NR_ENEMIES);
+
+	// initialize grenades
+	for (int i = 1; i < 4; i++) {
 		allMyBalls[i].position = vec3(i*2 - 10, 10, 0);
 		allMyBalls[i].radius = 0.5 + 0.1*i;
 	}
+
+	// initialize enemies
+	for (int i = 0; i < NR_ENEMIES; i++) {
+		enemies[i].position = vec3(i * 2 - 10, 10, 0);
+		enemies[i].lifestate = 2.f*i / NR_ENEMIES;
+	}
+
 	playerBall->radius = 1;
 	playerBall->restitution = 0.0;
 	playerBall->friction = 0.5;
@@ -165,6 +186,8 @@ int  intro_init(HWND h){
 	lights[0].color = Vec4{ 1.0,0.95f,0.5f,0.f };
 	lights[1].pos = Vec4{-24.f, 14.f, 0.f,0.f };
 	lights[1].color = Vec4{ 0.8f,0.95f,0.95f,0.f };
+
+	fparams[3].x = 1;
 
 	return 1;
 }
@@ -261,6 +284,7 @@ long stopPlayAtTick = 0;
 bool tabWasLastPressed = false;
 bool lbuttonWasLastPressed = false;
 bool rbuttonWasLastPressed = false;
+float bar = 1.f;
 
 void intro_do(long time)
 {
@@ -367,22 +391,24 @@ void intro_do(long time)
 	fparams[2].x = (float)camLook.x;
 	fparams[2].y = (float)camLook.y;
 	fparams[2].z = (float)camLook.z;
+	
+
 
 
 	// guns and shit
 	fparams[3].y += 0.07;
 	// smooth gun height to normal
-	fparams[3].z -= fparams[3].z*0.2;
+	fparams[3].z -= fparams[3].z*0.3;
 	RaymarchResult result = worldMarch(camPos, camLook, 100, 0.5f, 12);
 
-	if (GetAsyncKeyState('Q')) {
+	if (GetAsyncKeyState('2')) {
 		if (fparams[3].x != 0)
-		fparams[3].z = -0.8;
+		fparams[3].z = -0.5;
 		fparams[3].x = 0;
 	}
-	if (GetAsyncKeyState('E')) {
+	if (GetAsyncKeyState('1')) {
 		if(fparams[3].x != 1)
-		fparams[3].z = -0.8;
+		fparams[3].z = -0.5;
 		fparams[3].x = 1;
 	}
 
@@ -394,10 +420,11 @@ void intro_do(long time)
 				allMyBalls[3].position = camLook*0.5f +camPos+cross(camLook,vec3(0,1,0))*0.5;
 				allMyBalls[3].velocity = camLook * 60;
 				fparams[3].x = 1;
-				fparams[3].z = 0.3;
+				fparams[3].z = 0.6;
 				vec3 lpos = camPos + camLook;
 				lights[2].color = Vec4{ 0.5f,0.3f,0.2f,1.0f };
 				lights[2].pos = Vec4{ lpos.x,lpos.y,lpos.z,0.0f };
+				bar -= 0.07f;
 			}
 		}
 		else {
@@ -407,10 +434,14 @@ void intro_do(long time)
 				lights[2].color = Vec4{ 0.8f,0.8f,1.2f,2.0f };
 				lights[2].pos = Vec4{ lpos.x,lpos.y,lpos.z,1.0f };
 				fparams[3].y += 0.3;
+				bar -= 0.003f;
 			}
 		}
 		
 	}
+
+	// send bar
+	fparams[3].w = bar;
 	
 	glBindBuffer(GL_UNIFORM_BUFFER, mylightbuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Light)*NR_LIGHTS, lights);
@@ -424,6 +455,11 @@ void intro_do(long time)
 
 	glBindBuffer(GL_UNIFORM_BUFFER, myballbuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Ball)*NR_BALLS, myballs);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	copyEnemyBalls(myenemies);
+	glBindBuffer(GL_UNIFORM_BUFFER, enemybuffer);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Ball)*NR_ENEMIES, myenemies);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	// Render

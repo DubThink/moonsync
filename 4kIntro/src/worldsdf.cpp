@@ -1,4 +1,5 @@
 #include "worldsdf.h"
+#include "enemy.h"
 
 float worldSDF1(vec3 v) {
 	float sdf_agg = 0.0;
@@ -6,10 +7,12 @@ float worldSDF1(vec3 v) {
 	float plane = sdPlane(v, vec4(0.0, 1.0, 0.0, 2.0));
 	vec3 q, r;
 
-	// enemy
-	float playerModel = sdEnemy(v, vec3(0, 20, 0));
+	float playerModel = 100;
+	for (int i = 0; i < NR_ENEMIES; i++) {
+		playerModel = _min(sdEnemy(v, enemies[i].position), playerModel);
+	}
 
-	float box1 = sdBox(v, vec3(36.0, 22.0, 16.0));
+	float box1 = sdBox(v, vec3(40.0, 22.0, 20.0));
 	float box2 = sdBox(v, vec3(34.5, 35.0, 14.5));
 	// -- Arches - lower floor
 	float archesLowerFloor = _min(sdCappedCylinder(vec3(v.y - 6, v.x, mod(v.z + 5, 10) - 5), vec2(4.5, 36)), sdCappedCylinder(vec3(mod(v.x + 5, 10) - 5, v.z, v.y - 6), vec2(4.5, 15)));
