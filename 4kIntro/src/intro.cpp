@@ -49,9 +49,7 @@ HWND hWnd;
 
 // -------- sound block  ---------
 static V2MPlayer player;
-static V2MPlayer playerZZZ;
 extern "C" const sU8 theTune[];
-extern "C" const sU8 theZZZ[];
 
 void  InitSound()
 {
@@ -60,13 +58,7 @@ void  InitSound()
 
 	dsInit(player.RenderProxy, &player, GetForegroundWindow());
 
-	playerZZZ.Init();
-	playerZZZ.Open(theZZZ);
-
-	//dsInit(playerZZZ.RenderProxy, &playerZZZ, GetForegroundWindow());
-
-	player.Play();
-	playerZZZ.Play();
+	//player.Play();
 }
 void CloseSound() {
 	dsClose();
@@ -165,6 +157,9 @@ int  intro_init(HWND h){
 	playerBall->restitution = 0.0;
 	playerBall->friction = 0.5;
 	playerBall->playerPhysics = true;
+	playerBall->position = vec3(10, 10, 0);
+
+	allMyBalls[3].radius = 0.5;
 
 	lights[0].pos = Vec4{ 24.f, 14.f, 0.f,0.f };
 	lights[0].color = Vec4{ 1.0,0.95f,0.5f,0.f };
@@ -261,7 +256,7 @@ DebugCamera cam;
 long last_time=-1;
 float frameTime = 0;
 bool freeCam = true;
-
+long stopPlayAtTick = 0;
 // action bools
 bool tabWasLastPressed = false;
 bool lbuttonWasLastPressed = false;
@@ -316,11 +311,12 @@ void intro_do(long time)
 				playerBall->velocity.x = 0;
 				playerBall->velocity.z = 0;
 			}
+			if (GetAsyncKeyState(VK_CONTROL))physSpeed *= .5;
 			if (GetAsyncKeyState('W')) playerBall->velocity += normalize(cam.getLookDirection().x0z())*physSpeed*frameTime;
 			if (GetAsyncKeyState('S')) playerBall->velocity += normalize(cam.getLookDirection().x0z())*physSpeed*-frameTime;
 			if (GetAsyncKeyState('A')) playerBall->velocity += normalize(cross(cam.getLookDirection(), vec3{ 0,1,0 }))*physSpeed*-frameTime;
 			if (GetAsyncKeyState('D')) playerBall->velocity += normalize(cross(cam.getLookDirection(), vec3{ 0,1,0 }))*physSpeed*frameTime;
-			if (GetAsyncKeyState(VK_SPACE) && playerBall->onground && playerBall->velocity.y<8.0f)playerBall->velocity += vec3{ 0,12,0 };
+			if (GetAsyncKeyState(VK_SPACE) && playerBall->onground && playerBall->velocity.y<12.0f)playerBall->velocity += vec3{ 0,16,0 };
 
 		}
 		if (GetAsyncKeyState(VK_LEFT))cam.lookRight(-2);
@@ -328,6 +324,9 @@ void intro_do(long time)
 		if (GetAsyncKeyState(VK_DOWN))cam.lookUp(-1);
 		if (GetAsyncKeyState(VK_UP))cam.lookUp(1);
 
+		if (GetAsyncKeyState('C')) {
+			playerBall->position = cam.getPosition();
+		}
 
 
 		POINT screenMouse;
@@ -369,25 +368,49 @@ void intro_do(long time)
 	fparams[2].y = (float)camLook.y;
 	fparams[2].z = (float)camLook.z;
 
-	if (GetAsyncKeyState(VK_LBUTTON) && !lbuttonWasLastPressed) {
-		// tab action key
-		allMyBalls[3].position = vec3(fparams[1]);
-		allMyBalls[3].velocity = cam.getLookDirection() * 20;
-		dsLock();
-		player.Play(150);
-		dsUnlock();
-		
-	} lbuttonWasLastPressed = GetAsyncKeyState(VK_LBUTTON);
 
-	if (GetAsyncKeyState(VK_RBUTTON)) {// && !rbuttonWasLastPressed
-		RaymarchResult result = worldMarch(camPos,camLook, 100, 0.5f,12);
-		if(result.hit)result.position += result.normal * -1;
-		lights[2].pos = Vec4{result.position.x,result.position.y,result.position.z,1.0};
+	// guns and shit
+	fparams[3].y += 0.07;
+	// smooth gun height to normal
+	fparams[3].z -= fparams[3].z*0.2;
+	RaymarchResult result = worldMarch(camPos, camLook, 100, 0.5f, 12);
+
+	if (GetAsyncKeyState('Q')) {
+		if (fparams[3].x != 0)
+		fparams[3].z = -0.8;
+		fparams[3].x = 0;
 	}
-	else {
-		lights[2].pos = Vec4{ 0.0, 0.0, 0.0, 0.0 };
+	if (GetAsyncKeyState('E')) {
+		if(fparams[3].x != 1)
+		fparams[3].z = -0.8;
+		fparams[3].x = 1;
 	}
-	rbuttonWasLastPressed = GetAsyncKeyState(VK_RBUTTON);
+
+	lights[2].color.w= lights[2].color.w*0.6f;
+
+	if (GetAsyncKeyState(VK_LBUTTON)) {
+		if (fparams[3].x > 0.5) {
+			if (abs(fparams[3].z) < 0.01){ // gun is at rest; fire
+				allMyBalls[3].position = camLook*0.5f +camPos+cross(camLook,vec3(0,1,0))*0.5;
+				allMyBalls[3].velocity = camLook * 60;
+				fparams[3].x = 1;
+				fparams[3].z = 0.3;
+				vec3 lpos = camPos + camLook;
+				lights[2].color = Vec4{ 0.5f,0.3f,0.2f,1.0f };
+				lights[2].pos = Vec4{ lpos.x,lpos.y,lpos.z,0.0f };
+			}
+		}
+		else {
+			if (fparams[3].z > -0.01) {// gun is at raised; fire
+				fparams[3].x = 0;
+				vec3 lpos = camPos + camLook * result.dist;
+				lights[2].color = Vec4{ 0.8f,0.8f,1.2f,2.0f };
+				lights[2].pos = Vec4{ lpos.x,lpos.y,lpos.z,1.0f };
+				fparams[3].y += 0.3;
+			}
+		}
+		
+	}
 	
 	glBindBuffer(GL_UNIFORM_BUFFER, mylightbuffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(Light)*NR_LIGHTS, lights);
