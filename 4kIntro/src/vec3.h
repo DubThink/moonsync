@@ -8,6 +8,9 @@
 * broog.net
 */
 
+// data only vec4
+struct Vec4 { float x, y, z, w; };
+
 struct vec2 {
 	float x, y;
 	vec2() {}
@@ -45,6 +48,12 @@ struct vec3 {
 		this->z = x;
 	}
 
+	vec3(Vec4 v) {
+		this->x = v.x;
+		this->y = v.y;
+		this->z = v.z;
+	}
+
 	vec3(float x, float y, float z) {
 		this->x = x;
 		this->y = y;
@@ -66,6 +75,9 @@ struct vec3 {
 	}
 	vec2 xz() {
 		return vec2{ x,z };
+	}
+	vec3 x0z() {
+		return vec3{ x,0,z };
 	}
 };
 
@@ -107,8 +119,7 @@ inline vec2 abs(vec2 v) {
 	};
 }
 
-// data only vec4
-struct Vec4 { float x, y, z, w; };
+
 
 /**
 * A barebones header-only 4-vector for demos

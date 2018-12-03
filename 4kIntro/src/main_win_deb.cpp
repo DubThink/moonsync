@@ -11,8 +11,8 @@
 #include "intro.h"
 #include "4klang.h"
 #include "config.h"
-#include "v2mplayer.h"
-#include "libv2.h"
+
+
 
 //==============================================================================================
 
@@ -32,8 +32,6 @@ typedef struct
 
 // v2 synth code
 
-static V2MPlayer player;
-extern "C" const sU8 theTune[];
 
 
 void print(const char *bla)
@@ -42,16 +40,6 @@ void print(const char *bla)
 	int len = -1;
 	while (bla[++len]);
 	WriteFile(stdout, bla, len, &bw, 0);
-}
-
-void  InitSound()
-{
-	player.Init();
-	player.Open(theTune);
-
-	dsInit(player.RenderProxy, &player, GetForegroundWindow());
-
-	//player.Play();
 }
 
 
@@ -260,8 +248,7 @@ int WINAPI WinMain( HINSTANCE instance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		Sleep(1); // give other processes some chance to do something
 	}
     window_end( info );
-	dsClose();
-	player.Close();
+	CloseSound();
     return( 0 );
 }
 

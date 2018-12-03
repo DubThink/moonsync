@@ -245,6 +245,7 @@ call "$(ProjectDir)src\4klang_build\build_4klang.bat"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugKK|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="src\v2mplayer.cpp" />
+    <ClCompile Include="src\worldsdf.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\4klang.inc" />

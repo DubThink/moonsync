@@ -27,7 +27,7 @@ void DebugCamera::moveForward(float amt)
 
 void DebugCamera::moveRight(float amt)
 {
-	pos += cross(getLookDirection(), vec3{ 0,1,0 })*speed*amt*frameTime;
+	pos += normalize(cross(getLookDirection(), vec3{ 0,1,0 }))*speed*amt*frameTime;
 }
 
 void DebugCamera::moveUp(float amt)

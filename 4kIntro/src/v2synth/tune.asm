@@ -16,7 +16,11 @@ section .data
 
 global _theTune
 _theTune:
-  incbin "pzero_new.v2m"
+  incbin "concatenated_question_mark.v2p.v2m"
+
+global _theZZZ
+_theZZZ:
+  incbin "zzzzzzz_1.v2m"
 
 ;*************************************************************************************
 ;**                                                                                 **
