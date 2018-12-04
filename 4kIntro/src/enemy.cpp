@@ -128,9 +128,9 @@ void respawn(float chance)
 		if (enemies[i].lifestate == 0) {
 			if (rand() / (float)RAND_MAX < chance) {
 				enemies[i].position = vec3(
-					(rand() % 5)*10.f - 2,
+					(rand() % 5)*10.f - 20,
 					12 * (rand() % 2) + 5,
-					(rand() % 5)*10.f - 2);
+					(rand() % 5)*10.f - 20);
 				enemies[i].lifestate = 0.01;
 			}
 		}
