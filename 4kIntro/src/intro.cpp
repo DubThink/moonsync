@@ -314,6 +314,12 @@ void intro_do(long time)
 		//MessageBox(0, "Shaders Loaded", "Shaders Loaded", MB_OK | MB_ICONINFORMATION);
 	}
 #endif
+	//loop sound
+	if (time % 60000 < last_time % 60000) {
+		player.Stop();
+		player.Play(0);
+	}
+
 	if (last_time > 0)
 		frameTime = time - last_time;
 	last_time = time;
@@ -404,7 +410,7 @@ void intro_do(long time)
 	fparams[2].x = (float)camLook.x;
 	fparams[2].y = (float)camLook.y;
 	fparams[2].z = (float)camLook.z;
-	
+
 
 	// enemies
 	updateEnemies(frameTime / 1000.0, camPos,getBalls());
@@ -442,7 +448,7 @@ void intro_do(long time)
 		fparams[2].w = 0;
 	}
 
-	respawn(0.05);
+	if(!freeCam)respawn(0.05);
 	// guns and shit
 	fparams[3].y += 0.07;
 	// smooth gun height to normal
