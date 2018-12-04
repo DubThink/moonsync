@@ -33,4 +33,7 @@ void updatePhysics(float dt);
 
 void copyBalls(Ball* out);
 
+inline PhysBall* getBalls() {
+	return allMyBalls;
+}
 #endif // !BALL_PHYSICS_H

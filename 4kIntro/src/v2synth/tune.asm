@@ -16,11 +16,8 @@ section .data
 
 global _theTune
 _theTune:
-  incbin "concatenated_question_mark.v2p.v2m"
+  incbin "muzak.v2m"
 
-global _theZZZ
-_theZZZ:
-  incbin "zzzzzzz_1.v2m"
 
 ;*************************************************************************************
 ;**                                                                                 **

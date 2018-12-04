@@ -16,7 +16,9 @@ void updatePhysics(float dt){
 		ball = allMyBalls+i;
 		result.hit = true;
 		hitground = false;
-		if(ball->gravity)ball->velocity += vec3(0.f, -1.5f, 0.f);
+		if(ball->gravity)ball->velocity += vec3(0.f, -60.f, 0.f)*dt;
+		//if(length(ball->velocity)>20)
+		//	ball
 		float timeLeft = dt;
 		//if (distanceToTravel < EPSILON)continue;
 		// run for PHYS_MAX_ITER while we still need to travel
@@ -42,6 +44,18 @@ void updatePhysics(float dt){
 		if (ball->playerPhysics) {
 			ball->onground = worldSDF1(ball->position+vec3(0,-ball->radius/2,0)) < ball->radius/2 + 0.05;
 			if (ball->onground) ball->velocity = ball->velocity*0.5;
+			// jump pad
+			if (length(vec2(abs(ball->position.x) - 19, abs(ball->position.z) - 10)) < 3 && ball->position.y < 2) {
+				ball->velocity.y = 40;
+				ball->position.y +=1;
+
+				ball->onground = false;
+			}
+			// speed limit
+			if (length(ball->velocity.xz()) > 7) {
+				ball->velocity.x = ball->velocity.x*(1.f / length(ball->velocity.xz()));
+				ball->velocity.z = ball->velocity.z*(1.f / length(ball->velocity.xz()));
+			}
 		}
 		else {
 			ball->onground = hitground || worldSDF1(ball->position) < ball->radius + 0.05;

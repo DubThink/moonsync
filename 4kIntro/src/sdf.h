@@ -109,4 +109,19 @@ inline float opSmoothUnion(float d1, float d2, float k)
 }
 
 inline float opSubtraction(float d1, float d2) { return _max(-d1, d2); }
+
+inline vec3 rotateX(vec3 v, float theta) {
+	float c = cos(theta);
+	float s = sin(theta);
+	//mat3(
+	//	vec3(1, 0, 0),
+	//	vec3(0, c, -s),
+	//	vec3(0, s, c)
+	//);
+	return vec3{
+		v.x,
+		v.y*c + v.z*s,
+		v.y*-c + v.z*c
+	};
+}
 #endif // !SDF_H

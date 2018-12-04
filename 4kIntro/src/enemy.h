@@ -7,15 +7,22 @@
 struct Enemy {
 	vec3 position;
 	vec3 target;
-	float fire_cooldown;
+	float fire_cooldown=40.f;
 	float lifestate;
-	float health;
+	float health = 1;
 };
 
+struct rRS {
+	int hitCount=0;
+	int killCount=0;
+};
 extern Enemy enemies[NR_ENEMIES];
 
-void updateEnemies(float dt, vec3 playerPos);
+void updateEnemies(float dt, vec3 playerPos, PhysBall* balls);
 
-void updateEnemyProjectiles(float dt, vec3 playerPos);
+rRS updateEnemyProjectiles(float dt, vec3 playerPos, PhysBall* balls);
+rRS laserUpdate(float dt, vec3 dir, vec3 playerPos);
 void copyEnemyBalls(Ball* out);
+void respawn(float chance);
+void killall(float chance);
 #endif // !ENEMY_H

@@ -20,9 +20,13 @@ void main()
 	for(int i=-20;i<=20;i++){
 		val+= max(vec4(0),texture(inputTexture,c+vec2(0,i/fpar[0].z)) - vec4(0.7)) * 0.2  * (1-abs(i*0.05));//-vec4(1)
 	}
-	color+=val/3;//sqrt(val*3)/3;
+	//color+=val/3;//sqrt(val*3)/3;
 
 	if(abs(distance(gl_FragCoord.xy,resolution.xy/2)-6)<1){
+		color = vec4(.3,1.,.15, 1.0);
+	}
+	float kills=fpar[0].w;
+	if(c.x<kills*0.03&&mod(c.x,0.03)>0.015&&c.y>0.95){
 		color = vec4(.3,1.,.15, 1.0);
 	}
 }

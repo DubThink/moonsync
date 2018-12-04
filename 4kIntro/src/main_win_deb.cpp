@@ -166,7 +166,7 @@ static int window_init( WININFO *info )
 
     AdjustWindowRect( &rec, dwStyle, 0 );
 
-    info->hWnd = CreateWindowEx( dwExStyle, wc.lpszClassName, "Intro", dwStyle,
+    info->hWnd = CreateWindowEx( dwExStyle, wc.lpszClassName, "Omnibar - LD34 - B. Welsh - Music A. Lastowka", dwStyle,
                                (GetSystemMetrics(SM_CXSCREEN)-rec.right+rec.left)>>1,
                                (GetSystemMetrics(SM_CYSCREEN)-rec.bottom+rec.top)>>1,
                                rec.right-rec.left, rec.bottom-rec.top, 0, 0, info->hInstance, 0 );

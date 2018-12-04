@@ -50,6 +50,9 @@ Ball myenemies[NR_ENEMIES];
 
 HWND hWnd;
 
+DebugCamera cam;
+
+
 
 // -------- sound block  ---------
 static V2MPlayer player;
@@ -62,7 +65,8 @@ void  InitSound()
 
 	dsInit(player.RenderProxy, &player, GetForegroundWindow());
 
-	//player.Play();
+	dsSetVolume(0.2);
+	player.Play();
 }
 void CloseSound() {
 	dsClose();
@@ -171,7 +175,7 @@ int  intro_init(HWND h){
 	// initialize enemies
 	for (int i = 0; i < NR_ENEMIES; i++) {
 		enemies[i].position = vec3(i * 2 - 10, 10, 0);
-		enemies[i].lifestate = 2.f*i / NR_ENEMIES;
+		enemies[i].lifestate = 0.0;
 	}
 
 	playerBall->radius = 1;
@@ -188,6 +192,13 @@ int  intro_init(HWND h){
 	lights[1].color = Vec4{ 0.8f,0.95f,0.95f,0.f };
 
 	fparams[3].x = 1;
+
+	fparams[0].w = 0.2;
+	fparams[1].w = 1;
+	fparams[2].w = 1;
+	
+	playerBall->position = vec3(0, 1, -10);//cam.getPosition();
+	cam.yRot += 3.14159 / 2;
 
 	return 1;
 }
@@ -275,16 +286,17 @@ void reloadPostShader(){
 }
 long last_load = 0; // last shader load
 #endif
-DebugCamera cam;
 long last_time=-1;
 float frameTime = 0;
-bool freeCam = true;
+bool freeCam = false;
 long stopPlayAtTick = 0;
 // action bools
 bool tabWasLastPressed = false;
 bool lbuttonWasLastPressed = false;
 bool rbuttonWasLastPressed = false;
 float bar = 1.f;
+int ballnum = 0;
+int kills = 0;
 
 void intro_do(long time)
 {
@@ -307,13 +319,14 @@ void intro_do(long time)
 	last_time = time;
 
 	// action keys
-	if (GetAsyncKeyState(VK_TAB) && !tabWasLastPressed) {
+	if (GetAsyncKeyState(VK_F7) && !tabWasLastPressed) {
 		// tab action key
 		freeCam = !freeCam;
 	}
-	tabWasLastPressed = GetAsyncKeyState(VK_TAB);
+	tabWasLastPressed = GetAsyncKeyState(VK_F7);
 	
 	updatePhysics(frameTime / 1000.0);
+
 	copyBalls(myballs);
 	if (playerBall->onground)playerBall->velocity.y = 0;
 
@@ -321,7 +334,7 @@ void intro_do(long time)
 	if (hWnd == GetForegroundWindow()) {
 		cam.speed = (GetAsyncKeyState(VK_SHIFT) ? .8 : 0.15);
 		cam.frameTime=frameTime/20;
-		float physSpeed = playerBall->onground?.3:.01;
+		float physSpeed = playerBall->onground?.25:.06;
 		if (freeCam) {
 			if (GetAsyncKeyState('W')) cam.moveForward(1);
 			if (GetAsyncKeyState('S')) cam.moveForward(-1);
@@ -349,7 +362,7 @@ void intro_do(long time)
 		if (GetAsyncKeyState(VK_UP))cam.lookUp(1);
 
 		if (GetAsyncKeyState('C')) {
-			playerBall->position = cam.getPosition();
+			playerBall->position = vec3(0, 1, -10);//cam.getPosition();
 		}
 
 
@@ -393,8 +406,43 @@ void intro_do(long time)
 	fparams[2].z = (float)camLook.z;
 	
 
+	// enemies
+	updateEnemies(frameTime / 1000.0, camPos,getBalls());
+	// damage
+	rRS r32 = updateEnemyProjectiles(frameTime / 1000.0, camPos, getBalls());
+	bar += r32.killCount*0.2;
+	kills += r32.killCount;
 
+	bar -= 0.1*r32.hitCount;
 
+	//pickups
+
+	fparams[1].w = min(fparams[1].w + 0.003, 1);
+	fparams[2].w = min(fparams[2].w + 0.003, 1);
+
+	//if (length(vec2(playerBall->position.x - 19, playerBall->position.z - 10)) < 1
+	//	&& playerBall->position.y < 2
+	//	&& fparams[0].w == 1) {
+	//	// super
+	//}
+	fparams[0].w = kills;
+	if (length(vec2(playerBall->position.x-20, playerBall->position.z)) < 1
+		&& playerBall->position.y < 2
+		&& fparams[1].w == 1) {
+		// health
+		bar = min(bar + .25, 1);
+		fparams[1].w = 0;
+	}
+
+	if (length(vec2(playerBall->position.x + 20, playerBall->position.z)) < 1
+		&& playerBall->position.y < 2
+		&& fparams[2].w == 1) {
+		// health
+		bar = min(bar + .25, 1);
+		fparams[2].w = 0;
+	}
+
+	respawn(0.05);
 	// guns and shit
 	fparams[3].y += 0.07;
 	// smooth gun height to normal
@@ -411,6 +459,14 @@ void intro_do(long time)
 		fparams[3].z = -0.5;
 		fparams[3].x = 1;
 	}
+	bar = min(bar, 1);
+	if (bar <= 0) {
+		//endgame. for now, respawn with full health
+		bar = 1;
+		playerBall->position = vec3(0, 3, -10);//cam.getPosition();
+		killall(.1);
+		kills = 0;
+	}
 
 	lights[2].color.w= lights[2].color.w*0.6f;
 
@@ -419,6 +475,9 @@ void intro_do(long time)
 			if (abs(fparams[3].z) < 0.01){ // gun is at rest; fire
 				allMyBalls[3].position = camLook*0.5f +camPos+cross(camLook,vec3(0,1,0))*0.5;
 				allMyBalls[3].velocity = camLook * 60;
+				allMyBalls[3].lifetime = 1;
+				ballnum++;
+				ballnum %= 3;
 				fparams[3].x = 1;
 				fparams[3].z = 0.6;
 				vec3 lpos = camPos + camLook;
@@ -429,6 +488,9 @@ void intro_do(long time)
 		}
 		else {
 			if (fparams[3].z > -0.01) {// gun is at raised; fire
+				r32 =laserUpdate(frameTime/100.f,camLook,camPos);
+				bar += r32.killCount*0.16;
+				kills += r32.killCount;
 				fparams[3].x = 0;
 				vec3 lpos = camPos + camLook * result.dist;
 				lights[2].color = Vec4{ 0.8f,0.8f,1.2f,2.0f };
