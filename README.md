@@ -1,20 +1,18 @@
-# moonsync*, a demo by Benjamin Welsh and Adam Lastowka
+# moonsync, a demo by Benjamin Welsh and Adam Lastowka
 [Benjamin Welsh](https://github.com/DubThink)
 
 [Adam Lastowka](https://github.com/Rachmanin0xFF)
 
-*working title
 
-# 4k Intro Template
+Rendering done with and SDF-based pathtracer based largely on [Inigo Guilez's work](http://www.iquilezles.org/).
 
-From [naavis's github](https://github.com/naavis/4k-Intro-Template)
+Sound synthesis with [4klang](http://4klang.untergrund.net/) for the demo and [V2]() for the LD43 project.
 
-Template code for building a 4k demoscene intro on Windows.
-The template is based on [Inigo Guilez's 4k framework](http://www.iquilezles.org/code/isystem1k4k/isystem1k4k.htm), with some fairly major cleaning and streamlining done.
-Rendering is done with GLSL shaders and sound synthesis with [4klang](http://4klang.untergrund.net/).
-
-The template ships with [Crinkler 2.0](http://crinkler.net/) and [Shader Minifier 1.0](http://www.ctrl-alt-test.fr/?page_id=7).
+[Shader Minifier 1.0](http://www.ctrl-alt-test.fr/?page_id=7) is used for shader compression.
+[Crinkler 2.0](http://crinkler.net/) is used to compress the 4k demo and [kkrunchy a2](http://www.farbrausch.de/~fg/kkrunchy/) for the LD43 project.
 The minifier is automatically run for the fragment and post processing shaders during compilation.
+
+Original 4k intro template from [naavis's github](https://github.com/naavis/4k-Intro-Template)
 
 ## License
 
