@@ -6,11 +6,19 @@
 
 Rendering done with and SDF-based pathtracer based largely on [Inigo Guilez's work](http://www.iquilezles.org/).
 
-Sound synthesis with [4klang](http://4klang.untergrund.net/) for the demo and [V2]() for the LD43 project.
+Sound synthesis with V2.
 
 [Shader Minifier 1.0](http://www.ctrl-alt-test.fr/?page_id=7) is used for shader compression.
-[Crinkler 2.0](http://crinkler.net/) is used to compress the 4k demo and [kkrunchy a2](http://www.farbrausch.de/~fg/kkrunchy/) for the LD43 project.
-The minifier is automatically run for the fragment and post processing shaders during compilation.
+
+[kkrunchy a2](http://www.farbrausch.de/~fg/kkrunchy/)  used to compress the executable.
+
+Releases:
+
+[Omnibar 54k](http://www.dubthink.com/ld43/Omnibar_54k_patched2.7z)
+
+[Omnibar unpacked](http://www.dubthink.com/ld43/Omnibar_big_patched2.7z)
+
+[Ludum dare page](https://ldjam.com/events/ludum-dare/43/omnibar)
 
 Original 4k intro template from [naavis's github](https://github.com/naavis/4k-Intro-Template)
 
