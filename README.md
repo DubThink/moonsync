@@ -1,4 +1,4 @@
-# moonsync, a demo by Benjamin Welsh and Adam Lastowka
+# moonsync, an intro by Benjamin Welsh and Adam Lastowka
 [Benjamin Welsh](https://github.com/DubThink)
 
 [Adam Lastowka](https://github.com/Rachmanin0xFF)
