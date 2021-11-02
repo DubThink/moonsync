@@ -1,5 +1,5 @@
-# moonsync, a demo by Benjamin Welsh and Adam Lastowka
-[Benjamin Welsh](https://github.com/DubThink)
+# moonsync, a demo by Abby Welsh and Adam Lastowka
+[Abby Welsh](https://github.com/DubThink)
 
 [Adam Lastowka](https://github.com/Rachmanin0xFF)
 
